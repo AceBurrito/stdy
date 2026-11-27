@@ -249,7 +249,7 @@ struct BodySnapshotCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Body").steadyLabel()
+                Text("Body").steadySectionHeader()
                 Spacer()
                 if showsChevron {
                     Image(systemName: "chevron.right")

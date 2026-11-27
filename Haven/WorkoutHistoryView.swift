@@ -117,7 +117,7 @@ struct WorkoutHistoryView: View {
 
     private var emptyPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("No workouts yet").steadyLabel()
+            Text("No workouts yet").steadySectionHeader()
             Text("Log a workout to start tracking sets per muscle, estimated maxes and progression for every lift.")
                 .font(SteadyType.body)
                 .foregroundColor(.atlasTextMuted)
@@ -133,7 +133,7 @@ struct WorkoutHistoryView: View {
     private var weekPanel: some View {
         let s = weeklySummary
         return VStack(alignment: .leading, spacing: 14) {
-            Text("This week").steadyLabel()
+            Text("This week").steadySectionHeader()
             HStack(alignment: .top, spacing: 0) {
                 statColumn("Sessions", "\(s.sessionsCompleted)", "", delta(s.sessionsTrend))
                 divider
@@ -170,7 +170,7 @@ struct WorkoutHistoryView: View {
     private var musclePanel: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Sets per muscle").steadyLabel()
+                Text("Sets per muscle").steadySectionHeader()
                 Spacer()
                 let under = volumeRows.filter { $0.target > 0 && ($0.status == .under || $0.status == .none) }.count
                 if volumeWindow != .thisWeek {
@@ -241,7 +241,7 @@ struct WorkoutHistoryView: View {
     private var liftsPanel: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text("Lifts").steadyLabel()
+                Text("Lifts").steadySectionHeader()
                 Spacer()
                 NavigationLink { AllTimePRsView() } label: {
                     Text("Records")
@@ -274,7 +274,7 @@ struct WorkoutHistoryView: View {
     private var recentPanel: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Recent workouts").steadyLabel()
+                Text("Recent workouts").steadySectionHeader()
                 Spacer()
                 NavigationLink { AllWorkoutsView() } label: {
                     Text("All \(workoutSessions.count)")

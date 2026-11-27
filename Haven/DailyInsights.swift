@@ -247,7 +247,7 @@ struct InsightsCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Insights").steadyLabel()
+            Text("Insights").steadySectionHeader()
             ForEach(Array(insights.enumerated()), id: \.element.id) { index, insight in
                 if index > 0 { Rectangle().fill(Color.steadyHairline).frame(height: 1) }
                 HStack(alignment: .top, spacing: 10) {

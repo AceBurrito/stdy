@@ -420,7 +420,7 @@ struct WorkoutLogView: View {
     
     private var loadFromPlanSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Start from your plan").steadyLabel()
+            Text("Start from your plan").steadySectionHeader()
             
             if availablePlanWorkouts.isEmpty {
                 Text("No training plan yet. Set one up in Training Schedule, or add exercises below.")
@@ -471,7 +471,7 @@ struct WorkoutLogView: View {
     private var exerciseListSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Exercises").steadyLabel()
+                Text("Exercises").steadySectionHeader()
                 Spacer()
                 Text("Hold to reorder")
                     .font(SteadyType.caption)
@@ -528,7 +528,7 @@ struct WorkoutLogView: View {
     
     private var globalNotesSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Notes").steadyLabel()
+            Text("Notes").steadySectionHeader()
             
             TextEditor(text: $globalNotes)
                 .frame(minHeight: 100)
