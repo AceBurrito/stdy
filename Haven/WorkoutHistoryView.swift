@@ -3,17 +3,15 @@ import SwiftData
 
 // MARK: - Strength Tab (Complete Redesign)
 // Matches the Cardio tab's elegance and information density.
-// Layout: THIS WEEK summary → Strength Percentile → Rich workout history → Navigation links
+// Layout: THIS WEEK summary → Navigation links → Rich workout history
 
 struct WorkoutHistoryView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.unitFormatter) private var unitFormatter
     @Query(sort: \WorkoutSession.date, order: .reverse) private var workoutSessions: [WorkoutSession]
     @Query private var profiles: [UserProfile]
-    @Query(sort: \BiologicalPaceScore.date, order: .reverse) private var paceScores: [BiologicalPaceScore]
 
     @State private var showingWorkoutLog = false
-    @State private var showingStrengthAssessment = false
     @State private var sessionToDelete: WorkoutSession? = nil
     @State private var showDeleteConfirmation = false
     // BUG-D: programmatic navigation so swipeActions work
@@ -25,14 +23,6 @@ struct WorkoutHistoryView: View {
     
     private var weeklySummary: WeeklyStrengthSummary {
         WeeklyStrengthSummary.calculate(from: workoutSessions)
-    }
-    
-    private var strengthPercentile: Int? {
-        if let latestPace = paceScores.first,
-        let strengthPct = latestPace.strengthPercentile {
-            return Int(strengthPct)
-        }
-        return nil
     }
     
     /// Group workouts by month for display
@@ -61,7 +51,6 @@ struct WorkoutHistoryView: View {
                     ScrollView {
                         VStack(spacing: 24) {
                             weeklySummarySection
-                            strengthPercentileSection
                             navigationLinksSection
                             workoutHistorySection
                             Spacer().frame(height: 40)
@@ -70,7 +59,7 @@ struct WorkoutHistoryView: View {
                     }
                 }
             }
-            .navigationTitle("Strength Training")
+            .navigationTitle("Strength")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -86,9 +75,6 @@ struct WorkoutHistoryView: View {
             }
             .sheet(isPresented: $showingWorkoutLog) {
                 WorkoutLogView()
-            }
-            .sheet(isPresented: $showingStrengthAssessment) {
-                StrengthReassessmentView()
             }
             .confirmationDialog(
                 "Delete Workout?",
@@ -178,18 +164,6 @@ struct WorkoutHistoryView: View {
                 )
             }
         }
-    }
-    
-    // MARK: - Strength Percentile
-    
-    @ViewBuilder
-    private var strengthPercentileSection: some View {
-        StrengthPercentileCard(
-            percentile: strengthPercentile,
-            lastAssessmentDate: userProfile?.lastStrengthAssessmentDate,
-            dataSource: userProfile?.strengthDataSource,
-            onReassess: { showingStrengthAssessment = true }
-        )
     }
     
     // MARK: - Workout History (Rich Cards)
@@ -624,111 +598,6 @@ struct AllTimePRsView: View {
         }
         .navigationTitle("All-Time PRs")
         .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-// MARK: - Strength Assessment Wrapper
-// Wraps the onboarding StrengthAssessmentScreen for standalone use
-// from the Strength tab's "Reassess" button.
-
-struct StrengthAssessmentWrapper: View {
-    @Environment(\.modelContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
-    @Query private var profiles: [UserProfile]
-    
-    @State private var benchPressMax: String = ""
-    @State private var squatMax: String = ""
-    @State private var deadliftMax: String = ""
-    @State private var pushupRange: String? = nil
-    @State private var canStandFromSitting: Bool? = nil
-    @State private var deadHangRange: String? = nil
-    
-    private var userProfile: UserProfile? { profiles.first }
-    
-    var body: some View {
-        NavigationView {
-            ZStack {
-                Color.atlasBackground.ignoresSafeArea()
-                
-                // NOTE: Adapt this to match your StrengthAssessmentScreen's
-                // actual parameter types. The onboarding version uses
-                // LongevityTierCalculation.PushupRange and .DeadHangRange enums.
-                // If your current StrengthAssessmentScreen uses those enum types,
-                // update the @State vars above to match.
-                //
-                // For now, here's a simplified standalone version:
-                
-                VStack(spacing: 24) {
-                    Text("Strength Reassessment")
-                        .font(.system(size: 28, weight: .light))
-                        .foregroundColor(.atlasText)
-                    
-                    Text("Update your push-up, dead hang, and sit-to-stand data to recalculate your Pace strength component.")
-                        .font(.system(size: 15))
-                        .foregroundColor(.atlasTextMuted)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
-                    
-                    Spacer()
-                    
-                    // TODO: Replace this with your actual StrengthAssessmentScreen
-                    // once you confirm the exact bindings it needs.
-                    // Example:
-                    //
-                    // StrengthAssessmentScreen(
-                    //     benchPressMax: $benchPressMax,
-                    //     squatMax: $squatMax,
-                    //     deadliftMax: $deadliftMax,
-                    //     pushupRange: $pushupRange,
-                    //     canStandFromSitting: $canStandFromSitting,
-                    //     deadHangRange: $deadHangRange,
-                    //     onContinue: { saveAndDismiss() }
-                    // )
-                    
-                    Button(action: { dismiss() }) {
-                        Text("Close (Wire Assessment Here)")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.atlasBackground)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(Color.atlasPrimary)
-                            .cornerRadius(12)
-                    }
-                    .padding(.horizontal, 24)
-                    
-                    Spacer()
-                }
-                .padding(.top, 40)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundColor(.atlasTextMuted)
-                }
-            }
-        }
-    }
-    
-    private func saveAndDismiss() {
-        guard let profile = userProfile else { dismiss(); return }
-        
-        // Save assessment data to profile
-        if let bench = Double(benchPressMax) { profile.benchPressMax = bench }
-        if let squat = Double(squatMax) { profile.squatMax = squat }
-        if let deadlift = Double(deadliftMax) { profile.deadliftMax = deadlift }
-        profile.pushupRange = pushupRange
-        profile.canStandFromSitting = canStandFromSitting
-        profile.deadHangRange = deadHangRange
-        profile.lastStrengthAssessmentDate = Date()
-        
-        try? modelContext.save()
-        
-        // Trigger Pace recalculation
-        // Your HealthKitManager.shared.calculateAndStoreDailyPace() should
-        // pick this up on next sync. Or call it directly here if you want
-        // immediate recalculation.
-        
-        dismiss()
     }
 }
 

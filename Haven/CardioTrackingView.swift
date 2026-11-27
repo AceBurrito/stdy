@@ -494,7 +494,8 @@ struct ManualCardioLogView: View {
     @State private var analysisResult: WorkoutAnalysisResult? = nil
     @State private var isAnalyzing = false
 
-    var habit: Habit? = nil
+    // Optional planned day (pre-fills targets when launched from Today's training card)
+    var plannedDay: PlannedWorkoutDay? = nil
     var onComplete: (() -> Void)? = nil
 
     private var userProfile: UserProfile? {
@@ -706,7 +707,6 @@ struct ManualCardioLogView: View {
                     CardioImportConfirmationView(
                         workout: workout,
                         analysisResult: result,
-                        habit: habit,
                         onComplete: {
                             onComplete?()
                             dismiss()
@@ -794,21 +794,7 @@ struct ManualCardioLogView: View {
     // MARK: - Load from Training Plan
 
     private func loadFromTrainingPlan() {
-        guard let habit = habit,
-              let dayOfWeek = habit.dayOfWeek else {
-            return
-        }
-
-        let descriptor = FetchDescriptor<TrainingProgram>(
-            predicate: #Predicate { $0.isActive == true }
-        )
-        guard let program = (try? modelContext.fetch(descriptor))?.first else { return }
-        let workoutDays = program.isEventPlan
-            ? (program.workoutWeeks.first { $0.weekNumber == (profiles.first?.currentEventWeek ?? 1) }?.days ?? [])
-            : program.workoutDays
-        guard let plannedDay = workoutDays.first(where: { $0.dayOfWeek == dayOfWeek }) else { return }
-
-        guard plannedDay.dayType == "cardio" else { return }
+        guard let plannedDay, plannedDay.dayType == "cardio" else { return }
 
         if let cardioType = plannedDay.cardioType {
             switch cardioType.lowercased() {
@@ -825,16 +811,7 @@ struct ManualCardioLogView: View {
     }
 
     private func getPlannedDuration() -> Int? {
-        guard let habit = habit,
-            let dayOfWeek = habit.dayOfWeek else { return nil }
-        let descriptor = FetchDescriptor<TrainingProgram>(
-            predicate: #Predicate { $0.isActive == true }
-        )
-        guard let program = (try? modelContext.fetch(descriptor))?.first else { return nil }
-        let workoutDays = program.isEventPlan
-            ? (program.workoutWeeks.first { $0.weekNumber == (profiles.first?.currentEventWeek ?? 1) }?.days ?? [])
-            : program.workoutDays
-        return workoutDays.first(where: { $0.dayOfWeek == dayOfWeek })?.cardioDuration
+        plannedDay?.cardioDuration
     }
 
     // MARK: - Save Manual Session
@@ -857,9 +834,9 @@ struct ManualCardioLogView: View {
 
         modelContext.insert(session)
 
-        if let habit = habit {
-            let dataController = DataController(modelContext: modelContext)
-            dataController.markHabitComplete(habit)
+        if let plannedDay, plannedDay.dayType == "cardio" {
+            plannedDay.isPrimaryCompleted = true
+            plannedDay.isPrimaryCompletedDate = Date()
         }
 
         do {

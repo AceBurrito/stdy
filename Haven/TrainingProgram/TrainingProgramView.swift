@@ -9,9 +9,6 @@ struct TrainingProgramView: View {
     private var activePrograms: [TrainingProgram]
     
     @State private var showingChangePlan = false
-    @State private var showingEventSetupSheet = false
-    @State private var viewingWeek: Int = 1
-    @State private var isLoadingWeek = false
     @State private var trainingTab: TrainingTabSelection = .schedule
 
     enum TrainingTabSelection: String, CaseIterable {
@@ -22,7 +19,6 @@ struct TrainingProgramView: View {
     // No-plan empty state sheet triggers
     @State private var showNoPlanBrowse = false
     @State private var showNoPlanCustom = false
-    @State private var showNoPlanEvent = false
 
     // Day reassignment state
     @State private var workoutToMove: PlannedWorkoutDay? = nil
@@ -30,35 +26,6 @@ struct TrainingProgramView: View {
     // Workout detail sheet (item-based to fix blank sheet bug)
     @State private var sheetWorkout: PlannedWorkoutDay? = nil
 
-    private func ensureWeekDataExists(weekNumber: Int) {
-        if activeProgram?.workoutWeeks.first(where: { $0.weekNumber == weekNumber }) != nil {
-            return
-        }
-        
-        guard let profile = userProfile else { return }
-        
-        isLoadingWeek = true
-        
-        Task {
-            do {
-                let _ = try await EventPlanGenerator.ensureWeekExists(
-                    profile: profile,
-                    modelContext: modelContext,
-                    weekNumber: weekNumber
-                )
-                
-                await MainActor.run {
-                    isLoadingWeek = false
-                }
-            } catch {
-                print("❌ Failed to load week \(weekNumber): \(error)")
-                await MainActor.run {
-                    isLoadingWeek = false
-                }
-            }
-        }
-    }
-    
     private var userProfile: UserProfile? {
         profiles.first
     }
@@ -67,29 +34,8 @@ struct TrainingProgramView: View {
         activePrograms.first
     }
     
-    private var isEventPlan: Bool {
-        activeProgram?.isEventPlan ?? false
-    }
-    
-    private var currentEventWeek: Int {
-        userProfile?.currentEventWeek ?? 1
-    }
-    
-    private var totalWeeks: Int {
-        activeProgram?.totalWeeks ?? 1
-    }
-    
-    private var currentWeekData: PlannedWorkoutWeek? {
-        let week = activeProgram?.workoutWeeks.first { $0.weekNumber == viewingWeek }
-        return week
-    }
-    
     private var workoutDaysForDisplay: [PlannedWorkoutDay] {
-        if isEventPlan {
-            return currentWeekData?.days.sorted { $0.dayOfWeek < $1.dayOfWeek } ?? []
-        } else {
-            return activeProgram?.workoutDays.sorted { $0.dayOfWeek < $1.dayOfWeek } ?? []
-        }
+        activeProgram?.workoutDays.sorted { $0.dayOfWeek < $1.dayOfWeek } ?? []
     }
     
     // Full 7-day week: real workouts + rest day placeholders
@@ -113,41 +59,25 @@ struct TrainingProgramView: View {
         Calendar.current.component(.weekday, from: Date()) - 1
     }
     
-    private var daysUntilEvent: Int? {
-        guard let eventDate = userProfile?.eventDate ?? activeProgram?.eventDate else { return nil }
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        let event = calendar.startOfDay(for: eventDate)
-        return calendar.dateComponents([.day], from: today, to: event).day
-    }
-    
-    private var eventHasPassed: Bool {
-        guard let days = daysUntilEvent else { return false }
-        return days < 0
-    }
-    
     var body: some View {
-        NavigationStack {
+        Group {
             ZStack {
                 Color.atlasBackground
                     .ignoresSafeArea()
                 
                 if let program = activeProgram {
                     VStack(spacing: 0) {
-                        // Segmented control (only for non-event plans)
-                        if !isEventPlan {
-                            Picker("", selection: $trainingTab) {
-                                ForEach(TrainingTabSelection.allCases, id: \.self) { tab in
-                                    Text(tab.rawValue).tag(tab)
-                                }
+                        Picker("", selection: $trainingTab) {
+                            ForEach(TrainingTabSelection.allCases, id: \.self) { tab in
+                                Text(tab.rawValue).tag(tab)
                             }
-                            .pickerStyle(.segmented)
-                            .padding(.horizontal, 24)
-                            .padding(.top, 16)
-                            .padding(.bottom, 8)
                         }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 16)
+                        .padding(.bottom, 8)
 
-                        if trainingTab == .routines && !isEventPlan {
+                        if trainingTab == .routines {
                             RoutinesListView()
                         } else {
                             ScrollView {
@@ -158,14 +88,6 @@ struct TrainingProgramView: View {
                                             userProfile?.hasSeenTrainingIntro = true
                                             try? modelContext.save()
                                         }
-                                    }
-                                    
-                                    if isEventPlan {
-                                        eventCountdownSection
-                                    }
-                                    
-                                    if isEventPlan && totalWeeks > 1 {
-                                        weekSelectorSection
                                     }
                                     
                                     headerSection(program: program)
@@ -182,9 +104,8 @@ struct TrainingProgramView: View {
                     emptyStateView
                 }
             }
-            .navigationTitle("Training Program")
+            .navigationTitle("Training")
             .navigationBarTitleDisplayMode(.inline)
-            .navigationBarHidden(true)
             
             // Workout detail sheet (item-based — fixes blank sheet bug)
             .sheet(item: $sheetWorkout) { workout in
@@ -197,9 +118,6 @@ struct TrainingProgramView: View {
             .sheet(isPresented: $showingChangePlan) {
                 ChangePlanView()
             }
-            .sheet(isPresented: $showingEventSetupSheet) {
-                EventCreationFlow()
-            }
             .sheet(item: $workoutToMove) { workout in
                 DayReassignmentView(
                     workout: workout,
@@ -209,281 +127,19 @@ struct TrainingProgramView: View {
                     }
                 )
             }
-            .onAppear {
-                checkEventStatus()
-                if isEventPlan {
-                    viewingWeek = currentEventWeek
-                }
-            }
         }
-    }
-    
-    // MARK: - Week Selector Section
-    private var weekSelectorSection: some View {
-        let maxViewableWeek = totalWeeks
-        
-        return VStack(spacing: 12) {
-            HStack {
-                Button(action: {
-                    if viewingWeek > 1 {
-                        viewingWeek -= 1
-                    }
-                }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(viewingWeek > 1 ? .atlasPrimary : .atlasTextMuted.opacity(0.3))
-                        .frame(width: 44, height: 44)
-                        .background(Color.white.opacity(0.05))
-                        .cornerRadius(10)
-                }
-                .disabled(viewingWeek <= 1)
-                
-                Spacer()
-                
-                VStack(spacing: 4) {
-                    Text("WEEK \(viewingWeek) OF \(totalWeeks)")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(viewingWeek == currentEventWeek ? .atlasPrimary : .atlasText)
-                        .tracking(1)
-                    
-                    if let weekData = currentWeekData {
-                        Text(weekData.phaseName)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.atlasAccent)
-                        
-                        if let focus = weekData.weekFocus {
-                            Text(focus)
-                                .font(.system(size: 11))
-                                .foregroundColor(.atlasTextMuted)
-                                .multilineTextAlignment(.center)
-                                .lineLimit(2)
-                        }
-                    } else {
-                        Text("Loading...")
-                            .font(.system(size: 12))
-                            .foregroundColor(.atlasTextMuted)
-                    }
-                    
-                    if viewingWeek == currentEventWeek {
-                        Text("CURRENT WEEK")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.atlasBackground)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(Color.atlasPrimary)
-                            .cornerRadius(4)
-                    }
-                }
-                
-                Spacer()
-                
-                Button(action: {
-                    if viewingWeek < maxViewableWeek {
-                        viewingWeek += 1
-                        ensureWeekDataExists(weekNumber: viewingWeek)
-                    }
-                }) {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(viewingWeek < maxViewableWeek ? .atlasPrimary : .atlasTextMuted.opacity(0.3))
-                        .frame(width: 44, height: 44)
-                        .background(Color.white.opacity(0.05))
-                        .cornerRadius(10)
-                }
-                .disabled(viewingWeek >= maxViewableWeek)
-            }
-            
-            if viewingWeek != currentEventWeek {
-                Button(action: { viewingWeek = currentEventWeek }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.uturn.backward")
-                            .font(.system(size: 12))
-                        Text("Jump to Current Week")
-                            .font(.system(size: 13, weight: .medium))
-                    }
-                    .foregroundColor(.atlasPrimary)
-                    .padding(.vertical, 8)
-                }
-            }
-            
-            if viewingWeek > currentEventWeek {
-                Text("Preview • Your complete plan based on proven training methods")
-                    .font(.system(size: 11))
-                    .foregroundColor(.atlasTextMuted)
-                    .italic()
-            }
-            
-            weekProgressBar
-        }
-        .padding(16)
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(12)
-    }
-    
-    // MARK: - Week Progress Bar
-    private var weekProgressBar: some View {
-        VStack(spacing: 8) {
-            if let program = activeProgram, let phasesJSON = program.phasesJSON,
-               let phasesData = phasesJSON.data(using: .utf8),
-               let phases = try? JSONDecoder().decode([String: [Int]].self, from: phasesData) {
-                
-                GeometryReader { geometry in
-                    let width = geometry.size.width
-                    
-                    ZStack(alignment: .leading) {
-                        Rectangle()
-                            .fill(Color.white.opacity(0.1))
-                            .frame(height: 6)
-                            .cornerRadius(3)
-                        
-                        Rectangle()
-                            .fill(Color.atlasPrimary)
-                            .frame(width: width * CGFloat(currentEventWeek) / CGFloat(totalWeeks), height: 6)
-                            .cornerRadius(3)
-                        
-                        Circle()
-                            .fill(viewingWeek == currentEventWeek ? Color.atlasPrimary : Color.atlasAccent)
-                            .frame(width: 12, height: 12)
-                            .offset(x: width * CGFloat(viewingWeek - 1) / CGFloat(max(totalWeeks - 1, 1)) - 6)
-                    }
-                }
-                .frame(height: 12)
-                
-                HStack {
-                    ForEach(["base", "build", "peak", "taper"], id: \.self) { phase in
-                        if let range = phases[phase], range.count == 2 {
-                            Text(phase.capitalized)
-                                .font(.system(size: 9, weight: .medium))
-                                .foregroundColor(currentWeekData?.phaseName.lowercased() == phase ? .atlasPrimary : .atlasTextMuted)
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    // MARK: - Event Countdown Section
-    private var eventCountdownSection: some View {
-        VStack(spacing: 12) {
-            if eventHasPassed {
-                eventCompletedCard
-            } else if let days = daysUntilEvent {
-                let eventName = userProfile?.eventName ?? userProfile?.eventType ?? activeProgram?.eventType ?? "Event"
-                
-                HStack(spacing: 16) {
-                    VStack(spacing: 2) {
-                        Text("\(days)")
-                            .font(.system(size: 36, weight: .bold))
-                            .foregroundColor(.atlasPrimary)
-                        Text("days")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.atlasTextMuted)
-                    }
-                    .frame(width: 70)
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("UNTIL \(eventName.uppercased())")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(.atlasAccent)
-                            .tracking(1.5)
-                        
-                        if let eventDate = userProfile?.eventDate ?? activeProgram?.eventDate {
-                            Text(eventDate.formatted(date: .long, time: .omitted))
-                                .font(.system(size: 15))
-                                .foregroundColor(.atlasText)
-                        }
-                        
-                        if let weekData = currentWeekData {
-                            Text("\(weekData.phaseName) Phase • Week \(currentEventWeek)/\(totalWeeks)")
-                                .font(.system(size: 13))
-                                .foregroundColor(.atlasTextMuted)
-                        }
-                    }
-                    
-                    Spacer()
-                }
-                .padding(16)
-                .background(Color.atlasPrimary.opacity(0.1))
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.atlasPrimary.opacity(0.3), lineWidth: 1)
-                )
-            }
-        }
-    }
-    
-    // MARK: - Event Completed Card
-    private var eventCompletedCard: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "trophy.fill")
-                .font(.system(size: 36))
-                .foregroundColor(.yellow)
-            
-            VStack(spacing: 4) {
-                Text("🎉 Event Complete!")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.atlasText)
-                
-                if let eventName = userProfile?.eventName ?? userProfile?.eventType {
-                    Text("How did \(eventName) go?")
-                        .font(.system(size: 15))
-                        .foregroundColor(.atlasTextMuted)
-                }
-            }
-            
-            VStack(spacing: 12) {
-                Button(action: {
-                    switchToLongevityMode()
-                    showingChangePlan = true
-                }) {
-                    Text("Choose a New Training Plan")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.atlasBackground)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color.atlasPrimary)
-                        .cornerRadius(10)
-                }
-                .buttonStyle(PlainButtonStyle())
-                
-                Button(action: { showingEventSetupSheet = true }) {
-                    Text("Train for Another Event")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(.atlasPrimary)
-                }
-            }
-        }
-        .padding(20)
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.yellow.opacity(0.3), lineWidth: 1)
-        )
     }
     
     // MARK: - Header
     private func headerSection(program: TrainingProgram) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            if isEventPlan {
-                Text(program.eventType?.uppercased() ?? "EVENT TRAINING")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.atlasAccent)
-                    .tracking(2)
-            } else {
-                Text("YOUR TRAINING WEEK")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.atlasAccent)
-                    .tracking(2)
-            }
+            Text("YOUR TRAINING WEEK")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.atlasAccent)
+                .tracking(2)
             
-            if let splitType = program.splitType, !isEventPlan {
+            if let splitType = program.splitType {
                 Text(formatSplitType(splitType))
-                    .font(.system(size: 28, weight: .light))
-                    .foregroundColor(.atlasText)
-            } else if isEventPlan, let weekData = currentWeekData {
-                Text("Week \(viewingWeek): \(weekData.phaseName)")
                     .font(.system(size: 28, weight: .light))
                     .foregroundColor(.atlasText)
             } else {
@@ -494,11 +150,7 @@ struct TrainingProgramView: View {
             
             HStack(spacing: 12) {
                 Label("\(program.daysPerWeek) days/week", systemImage: "calendar")
-                if let volume = currentWeekData?.totalVolume {
-                    Label(volume, systemImage: "clock")
-                } else {
-                    Label("\(program.minutesPerSession) min", systemImage: "clock")
-                }
+                Label("\(program.minutesPerSession) min", systemImage: "clock")
             }
             .font(.system(size: 14))
             .foregroundColor(.atlasTextMuted)
@@ -521,8 +173,7 @@ struct TrainingProgramView: View {
                 
                 TrainingDayCard(
                     workoutDay: day,
-                    isToday: day.dayOfWeek == todayDayOfWeek && (!isEventPlan || viewingWeek == currentEventWeek),
-                    isEventPlan: isEventPlan,
+                    isToday: day.dayOfWeek == todayDayOfWeek,
                     isRestPlaceholder: isRestPlaceholder,
                     onTap: {
                         guard !isRestPlaceholder else { return }
@@ -563,39 +214,6 @@ struct TrainingProgramView: View {
             }
             .buttonStyle(PlainButtonStyle())
             
-            // Event Training CTA
-            if !isEventPlan {
-                Button(action: { showingEventSetupSheet = true }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "flag.fill")
-                            .font(.system(size: 14))
-                        
-                        Text("Training for an event?")
-                            .font(.system(size: 15, weight: .medium))
-                        
-                        Text("Marathon, Hyrox, Triathlon...")
-                            .font(.system(size: 13))
-                            .foregroundColor(.atlasTextMuted)
-                    }
-                    .foregroundColor(.atlasAccent)
-                    .padding(.vertical, 12)
-                }
-            } else {
-                Button(action: {
-                    switchToLongevityMode()
-                    showingChangePlan = true
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "arrow.uturn.backward")
-                            .font(.system(size: 14))
-                        
-                        Text("Switch back to Longevity Training")
-                            .font(.system(size: 14, weight: .medium))
-                    }
-                    .foregroundColor(.atlasTextMuted)
-                    .padding(.vertical, 12)
-                }
-            }
         }
     }
     
@@ -642,16 +260,6 @@ struct TrainingProgramView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                     
-                    // Event training
-                    Button(action: { showNoPlanEvent = true }) {
-                        NoPlanOptionCard(
-                            icon: "trophy.fill",
-                            iconColor: .atlasAmber,
-                            title: "Train for an Event",
-                            subtitle: "HYROX, marathon, triathlon, and more"
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
                 }
                 .padding(.horizontal, 24)
                 
@@ -675,11 +283,6 @@ struct TrainingProgramView: View {
                 onBack: { showNoPlanCustom = false }
             )
         }
-        .sheet(isPresented: $showNoPlanEvent) {
-            EventCreationFlow(onComplete: {
-                showNoPlanEvent = false
-            })
-        }
     }
     
     // MARK: - Helpers
@@ -690,33 +293,10 @@ struct TrainingProgramView: View {
         case "push_pull_legs", "ppl": return "Push/Pull/Legs"
         case "full_body": return "Full Body"
         case "bro_split": return "Body Part Split"
-        case "event_specific": return "Event Training"
         default: return split.replacingOccurrences(of: "_", with: " ").capitalized
         }
     }
     
-    private func checkEventStatus() {
-        guard let profile = userProfile else { return }
-        
-        // Advance event week if needed (inline replacement for TrainingPlanGenerator.checkAndAdvanceEventWeek)
-        if profile.trainingMode == "event",
-           let startDate = profile.eventPlanStartDate,
-           let lastAdvance = profile.lastEventWeekAdvanceDate {
-            let calendar = Calendar.current
-            let daysSinceLastAdvance = calendar.dateComponents([.day], from: lastAdvance, to: Date()).day ?? 0
-            if daysSinceLastAdvance >= 7 {
-                let weeksToAdvance = daysSinceLastAdvance / 7
-                let newWeek = min(profile.currentEventWeek + weeksToAdvance, totalWeeks)
-                if newWeek != profile.currentEventWeek {
-                    profile.currentEventWeek = newWeek
-                    profile.lastEventWeekAdvanceDate = calendar.date(byAdding: .day, value: weeksToAdvance * 7, to: lastAdvance)
-                    try? modelContext.save()
-                }
-            }
-            viewingWeek = profile.currentEventWeek
-        }
-    }
-
     private func reassignWorkoutToDay(_ workout: PlannedWorkoutDay, newDay: Int) {
         let oldDay = workout.dayOfWeek
         
@@ -734,67 +314,9 @@ struct TrainingProgramView: View {
         
         try? modelContext.save()
         
-        // Refresh training habits to reflect new day assignments
-        if let profile = userProfile {
-            TrainingHabitManager.createTrainingHabits(
-                profile: profile,
-                modelContext: modelContext
-            )
-        }
-        
         print("✅ Moved \(workout.dayName) from day \(oldDay) to day \(newDay)")
     }
     
-    private func switchToLongevityMode() {
-        guard let profile = userProfile else { return }
-        
-        print("🔄 [TrainingProgramView] Switching from event training to longevity mode")
-        
-        let masterPlanDescriptor = FetchDescriptor<EventMasterPlan>(
-            predicate: #Predicate { $0.isActive == true }
-        )
-        if let masterPlans = try? modelContext.fetch(masterPlanDescriptor) {
-            for plan in masterPlans {
-                plan.isActive = false
-            }
-        }
-        
-        let programDescriptor = FetchDescriptor<TrainingProgram>(
-            predicate: #Predicate { $0.isActive == true && $0.isEventPlan == true }
-        )
-        if let programs = try? modelContext.fetch(programDescriptor) {
-            for program in programs {
-                program.isActive = false
-            }
-        }
-        
-        let assessmentDescriptor = FetchDescriptor<UserCapabilityAssessment>()
-        if let assessments = try? modelContext.fetch(assessmentDescriptor) {
-            for assessment in assessments.filter({ $0.userProfile?.id == profile.id }) {
-                modelContext.delete(assessment)
-            }
-        }
-        
-        profile.trainingMode = "longevity"
-        profile.isTrainingForEvent = false
-        profile.eventType = nil
-        profile.eventName = nil
-        profile.eventDate = nil
-        profile.hasExistingPlan = false
-        profile.existingPlanDetails = nil
-        profile.existingPlanWeek = nil
-        profile.eventCompletedDate = nil
-        profile.currentEventWeek = 1
-        profile.eventPlanStartDate = nil
-        profile.lastEventWeekAdvanceDate = nil
-        
-        do {
-            try modelContext.save()
-            print("✅ [TrainingProgramView] Successfully switched to longevity mode")
-        } catch {
-            print("❌ [TrainingProgramView] Error saving longevity mode switch: \(error)")
-        }
-    }
 }
 
 // MARK: - Training Day Card
@@ -1258,7 +780,6 @@ struct NoPlanBrowseWrapper: View {
             if showCustomBuilder {
                 CustomPlanBuilderView(
                     onComplete: {
-                        createTrainingHabits()
                         dismiss()
                     },
                     onBack: {
@@ -1274,12 +795,10 @@ struct NoPlanBrowseWrapper: View {
                     restDays: restDays,
                     onContinue: { cardioDays in
                         commitPlanWithCardio(template: template, cardioDays: cardioDays)
-                        createTrainingHabits()
                         dismiss()
                     },
                     onSkip: {
                         commitPlanWithCardio(template: template, cardioDays: [])
-                        createTrainingHabits()
                         dismiss()
                     }
                 )
@@ -1304,10 +823,6 @@ struct NoPlanBrowseWrapper: View {
                     },
                     onBuildYourOwn: {
                         showCustomBuilder = true
-                    },
-                    onEventTraining: {
-                        // Handled by the parent — NoPlanView has its own event sheet
-                        dismiss()
                     }
                 )
             }
@@ -1329,13 +844,6 @@ struct NoPlanBrowseWrapper: View {
         )
     }
     
-    private func createTrainingHabits() {
-        guard let profile = userProfile else { return }
-        TrainingHabitManager.createTrainingHabits(
-            profile: profile,
-            modelContext: modelContext
-        )
-    }
 }
 
 #Preview {

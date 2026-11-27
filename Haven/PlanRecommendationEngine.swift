@@ -29,17 +29,24 @@ struct PlanRecommendationEngine {
         return .beginner
     }
 
-    /// Maps UserProfile goal strings to the format used in TrainingPlanTemplate.goalAlignment
-    /// UserProfile stores: "live_longer", "look_better", "feel_better", "get_stronger", "sport_performance"
-    /// Catalog stores: "liveLonger", "lookBetter", "feelBetter", "getStronger"
-    static func mapGoal(_ raw: String) -> String {
+    /// Maps a UserProfile goal string to the tags used in TrainingPlanTemplate.goalAlignment.
+    /// Current goals: "lose_fat", "build_muscle", "recomp", "maintain".
+    /// Legacy Atlas goals ("live_longer", "look_better", ...) are still mapped so
+    /// older profiles keep getting sensible recommendations.
+    /// Catalog tags: "liveLonger", "lookBetter", "feelBetter", "getStronger"
+    static func mapGoal(_ raw: String) -> [String] {
         switch raw {
-        case "live_longer": return "liveLonger"
-        case "look_better": return "lookBetter"
-        case "feel_better": return "feelBetter"
-        case "get_stronger": return "getStronger"
-        case "sport_performance": return "getStronger" // closest match
-        default: return raw
+        case "lose_fat": return ["lookBetter"]
+        case "build_muscle": return ["getStronger", "lookBetter"]
+        // Recomp plans are tagged lookBetter + liveLonger in the catalog
+        case "recomp": return ["lookBetter", "liveLonger"]
+        // Foundation plans: balanced, sustainable volume
+        case "maintain": return ["getStronger", "feelBetter", "liveLonger"]
+        case "live_longer": return ["liveLonger"]
+        case "look_better": return ["lookBetter"]
+        case "feel_better": return ["feelBetter"]
+        case "get_stronger", "sport_performance": return ["getStronger"]
+        default: return [raw]
         }
     }
 
@@ -63,8 +70,8 @@ struct PlanRecommendationEngine {
 
         // Build mapped goals array
         var goals: [String] = []
-        if let p = primaryGoal { goals.append(mapGoal(p)) }
-        if let s = secondaryGoal { goals.append(mapGoal(s)) }
+        if let p = primaryGoal { goals.append(contentsOf: mapGoal(p)) }
+        if let s = secondaryGoal { goals.append(contentsOf: mapGoal(s)) }
 
         return recommendInternal(
             goals: goals,

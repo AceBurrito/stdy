@@ -120,7 +120,7 @@ struct CardioOnboardingStepView: View {
                 .font(.system(size: 28, weight: .light))
                 .foregroundColor(.atlasText)
 
-            Text("VO₂ Max is the single strongest predictor of longevity. Here's what the research recommends.")
+            Text("Cardio supports recovery between lifting days and keeps conditioning up. Zone 2 on rest days is the default.")
                 .font(.system(size: 15))
                 .foregroundColor(.atlasTextMuted)
                 .lineSpacing(4)

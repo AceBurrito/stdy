@@ -1,29 +1,17 @@
 import SwiftUI
 
+/// Tab order: Today · Strength · Cardio · Body · More
+/// Training setup lives under More; it's a management screen, not a daily destination.
+enum AppTab: Int {
+    case today = 0
+    case strength = 1
+    case cardio = 2
+    case body = 3
+    case more = 4
+}
+
 struct MainTabView: View {
     @Environment(NavigationRouter.self) private var router
-    
-    init() {
-        // Customize tab bar appearance for premium look
-        let appearance = UITabBarAppearance()
-        appearance.configureWithDefaultBackground()
-        appearance.backgroundColor = UIColor(Color.atlasBackground.opacity(0.95))
-        
-        // Selected item color
-        appearance.stackedLayoutAppearance.selected.iconColor = UIColor(Color.atlasPrimary)
-        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
-            .foregroundColor: UIColor(Color.atlasPrimary)
-        ]
-        
-        // Unselected item color
-        appearance.stackedLayoutAppearance.normal.iconColor = UIColor(Color.white.opacity(0.6))
-        appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
-            .foregroundColor: UIColor(Color.white.opacity(0.6))
-        ]
-        
-        UITabBar.appearance().standardAppearance = appearance
-        UITabBar.appearance().scrollEdgeAppearance = appearance
-    }
     
     var body: some View {
         @Bindable var router = router
@@ -31,43 +19,37 @@ struct MainTabView: View {
         TabView(selection: $router.selectedTab) {
             TodayView()
                 .tabItem {
-                    Label("Today", systemImage: "house.fill")
+                    Label("Today", systemImage: "sun.max")
                 }
-                .tag(0)
-            
-            TrainingProgramView()
-                .tabItem {
-                    Label("Training", systemImage: "list.bullet.clipboard")
-                }
-                .tag(1)
+                .tag(AppTab.today.rawValue)
             
             WorkoutHistoryView()
                 .tabItem {
-                    Label("Strength", systemImage: "dumbbell.fill")
+                    Label("Strength", systemImage: "dumbbell")
                 }
-                .tag(2)
+                .tag(AppTab.strength.rawValue)
             
             CardioTrackingView()
                 .tabItem {
-                    Label("Cardio", systemImage: "heart.fill")
+                    Label("Cardio", systemImage: "heart")
                 }
-                .tag(3)
+                .tag(AppTab.cardio.rawValue)
             
             BodyCompView()
                 .tabItem {
                     Label("Body", systemImage: "figure.stand")
                 }
-                .tag(4)
+                .tag(AppTab.body.rawValue)
             
             ProfileView()
                 .tabItem {
-                    Label("Profile", systemImage: "person.fill")
+                    Label("More", systemImage: "ellipsis")
                 }
-                .tag(5)
+                .tag(AppTab.more.rawValue)
         }
         .tint(.atlasPrimary)
         .onChange(of: router.selectedTab) { oldValue, newValue in
-            if oldValue == 4 && newValue != 4 {
+            if oldValue == AppTab.body.rawValue && newValue != AppTab.body.rawValue {
                 NotificationCenter.default.post(
                     name: Notification.Name("LockBodyTab"),
                     object: nil

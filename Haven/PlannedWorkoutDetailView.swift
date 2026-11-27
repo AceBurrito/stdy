@@ -693,7 +693,7 @@ struct PlanExerciseSwapSheet: View {
                         Text("No alternatives found")
                             .font(.system(size: 16))
                             .foregroundColor(.atlasTextMuted)
-                        Text("This exercise isn't in the library. Ask your coach in chat for suggestions.")
+                        Text("This exercise isn't in the library. Pick a replacement from the full exercise list instead.")
                             .font(.system(size: 14))
                             .foregroundColor(.atlasTextMuted.opacity(0.7))
                             .multilineTextAlignment(.center)

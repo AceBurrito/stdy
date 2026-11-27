@@ -2,126 +2,114 @@
 // Haven (Main App target ONLY)
 //
 // Writes widget data to the shared App Group UserDefaults container.
-// The widget extension reads this data via AtlasWidgetProvider.
-// Call the appropriate update method after any relevant state change,
-// then WidgetCenter.reloadAllTimelines() is called automatically.
+// The widget extension reads it in AtlasWidgetProvider. Widget data never
+// goes through SwiftData directly. Every write ends with reloadAllTimelines().
+//
+// Keys (all prefixed "widget_"):
+//   recoveryState      String  RecoveryState raw value, "" when unknown
+//   workoutName        String
+//   exerciseCount      Int
+//   workoutType        String  "strength", "cardio", "rest"
+//   isRestDay          Bool
+//   workoutCompleted   Bool
+//   weightText         String  e.g. "182.4 lbs", "" when unknown
+//   bodyFatText        String  e.g. "18.2%", "" when unknown
+//   weightTrendText    String  e.g. "−1.2 lbs / 7d", "" when unknown
 
 import Foundation
+import SwiftData
 import WidgetKit
 
 struct WidgetDataWriter {
     static let shared = WidgetDataWriter()
-    
+
     private let defaults: UserDefaults?
-    
+
     init() {
         let suite = UserDefaults(suiteName: "group.com.atlas.workouts")
         self.defaults = suite
-        
+
         if suite == nil {
             print("❌ [Widget] Failed to create UserDefaults for group.com.atlas.workouts — App Group not accessible")
-        } else {
-            print("✅ [Widget] Shared UserDefaults container initialized")
         }
     }
 
     // MARK: - Full Refresh
 
-    /// Call on app launch, foreground entry, midnight rollover, and any major state change.
     func updateAll(
-        paceChanged: Bool,
-        paceDirection: String,
-        checkInAvailable: Bool,
-        checkInCompleted: Bool,
-        streakCount: Int,
-        habitsTotal: Int,
-        habitsCompleted: Int,
-        habitNames: [String],
-        habitStates: [Bool],
+        recoveryState: RecoveryState?,
         workoutName: String,
         workoutExerciseCount: Int,
         workoutType: String,
         isRestDay: Bool,
         workoutCompleted: Bool,
-        dayCount: Int
+        weightText: String,
+        bodyFatText: String,
+        weightTrendText: String
     ) {
         guard let defaults else {
             print("❌ [Widget] updateAll skipped — no shared defaults")
             return
         }
-        
-        defaults.set(paceChanged, forKey: "widget_paceChanged")
-        defaults.set(paceDirection, forKey: "widget_paceDirection")
-        defaults.set(checkInAvailable, forKey: "widget_checkInAvailable")
-        defaults.set(checkInCompleted, forKey: "widget_checkInCompleted")
-        defaults.set(streakCount, forKey: "widget_streakCount")
-        defaults.set(habitsTotal, forKey: "widget_habitsTotal")
-        defaults.set(habitsCompleted, forKey: "widget_habitsCompleted")
-        defaults.set(habitNames, forKey: "widget_habitNames")
-        defaults.set(habitStates, forKey: "widget_habitStates")
+
+        defaults.set(recoveryState?.rawValue ?? "", forKey: "widget_recoveryState")
         defaults.set(workoutName, forKey: "widget_workoutName")
         defaults.set(workoutExerciseCount, forKey: "widget_exerciseCount")
         defaults.set(workoutType, forKey: "widget_workoutType")
         defaults.set(isRestDay, forKey: "widget_isRestDay")
         defaults.set(workoutCompleted, forKey: "widget_workoutCompleted")
-        defaults.set(dayCount, forKey: "widget_dayCount")
+        defaults.set(weightText, forKey: "widget_weightText")
+        defaults.set(bodyFatText, forKey: "widget_bodyFatText")
+        defaults.set(weightTrendText, forKey: "widget_weightTrendText")
 
         WidgetCenter.shared.reloadAllTimelines()
-        
-        print("✅ [Widget] updateAll — habits: \(habitsCompleted)/\(habitsTotal), streak: \(streakCount), workout: \(workoutName), pace changed: \(paceChanged)")
+        print("✅ [Widget] updateAll — recovery: \(recoveryState?.rawValue ?? "none"), workout: \(workoutName), done: \(workoutCompleted)")
     }
 
-    // MARK: - Partial Updates
-
-    /// Call after a habit is toggled or habits list changes.
-    func updateHabits(completed: Int, total: Int, names: [String], states: [Bool], streak: Int) {
-        guard let defaults else {
-            print("❌ [Widget] updateHabits skipped — no shared defaults")
-            return
-        }
-        
-        defaults.set(completed, forKey: "widget_habitsCompleted")
-        defaults.set(total, forKey: "widget_habitsTotal")
-        defaults.set(names, forKey: "widget_habitNames")
-        defaults.set(states, forKey: "widget_habitStates")
-        defaults.set(streak, forKey: "widget_streakCount")
-        WidgetCenter.shared.reloadAllTimelines()
-        
-        print("✅ [Widget] updateHabits — \(completed)/\(total), streak: \(streak), names: \(names)")
-    }
-
-    /// Call after a workout is marked complete.
-    func updateWorkoutCompleted() {
+    /// Removes keys the Atlas widget used (habits, streak, Pace, check-in).
+    func removeLegacyKeys() {
         guard let defaults else { return }
-        defaults.set(true, forKey: "widget_workoutCompleted")
-        WidgetCenter.shared.reloadAllTimelines()
-        print("✅ [Widget] updateWorkoutCompleted")
+        let legacy = [
+            "widget_paceChanged", "widget_paceDirection", "widget_lastSeenPaceValue",
+            "widget_checkInAvailable", "widget_checkInCompleted",
+            "widget_streakCount", "widget_habitsTotal", "widget_habitsCompleted",
+            "widget_habitNames", "widget_habitStates", "widget_dayCount"
+        ]
+        legacy.forEach { defaults.removeObject(forKey: $0) }
     }
+}
 
-    /// Call after Pace score recalculation detects a change.
-    func updatePaceChanged(direction: String) {
-        guard let defaults else { return }
-        defaults.set(true, forKey: "widget_paceChanged")
-        defaults.set(direction, forKey: "widget_paceDirection")
-        WidgetCenter.shared.reloadAllTimelines()
-        print("✅ [Widget] updatePaceChanged — \(direction)")
-    }
+// MARK: - Widget Sync
 
-    /// Call when the user views the Today tab — clears the "Pace changed" flag.
-    func clearPaceChanged(currentPaceValue: Double) {
-        guard let defaults else { return }
-        defaults.set(false, forKey: "widget_paceChanged")
-        defaults.set(currentPaceValue, forKey: "widget_lastSeenPaceValue")
-        WidgetCenter.shared.reloadAllTimelines()
-        print("✅ [Widget] clearPaceChanged — stored pace: \(currentPaceValue)")
-    }
+/// Builds the widget payload from SwiftData and writes it. Call on launch,
+/// foreground, after a workout or cardio session is saved, and after a body
+/// comp entry changes.
+enum WidgetSync {
+    static func refresh(modelContext: ModelContext, unitFormatter: UnitFormatter) {
+        let metrics = (try? modelContext.fetch(FetchDescriptor<HealthMetrics>())) ?? []
+        let recovery = RecoveryScoreCalculator.assess(metrics: metrics)
 
-    /// Call when weekly check-in availability changes.
-    func updateCheckIn(available: Bool, completed: Bool) {
-        guard let defaults else { return }
-        defaults.set(available, forKey: "widget_checkInAvailable")
-        defaults.set(completed, forKey: "widget_checkInCompleted")
-        WidgetCenter.shared.reloadAllTimelines()
-        print("✅ [Widget] updateCheckIn — available: \(available), completed: \(completed)")
+        let program = (try? modelContext.fetch(
+            FetchDescriptor<TrainingProgram>(predicate: #Predicate { $0.isActive == true })
+        ))?.first
+        let plannedDay = TodayTraining.plannedDay(in: program)
+        let completed = TodayTraining.isCompleted(plannedDay: plannedDay, modelContext: modelContext)
+
+        let workoutType = plannedDay?.dayType ?? "rest"
+        let isRest = plannedDay == nil || workoutType == "rest"
+
+        let body = BodySnapshot.latest(modelContext: modelContext)
+
+        WidgetDataWriter.shared.updateAll(
+            recoveryState: recovery?.state,
+            workoutName: isRest ? "Rest Day" : (plannedDay?.dayName ?? "Rest Day"),
+            workoutExerciseCount: plannedDay?.exercises.count ?? 0,
+            workoutType: workoutType,
+            isRestDay: isRest,
+            workoutCompleted: completed,
+            weightText: body.weight.map { unitFormatter.displayWeight($0) } ?? "",
+            bodyFatText: body.bodyFatPercent.map { String(format: "%.1f%%", $0 * 100) } ?? "",
+            weightTrendText: body.weeklyChangeText(unitFormatter: unitFormatter) ?? ""
+        )
     }
 }

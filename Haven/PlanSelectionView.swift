@@ -27,9 +27,6 @@ struct PlanSelectionView: View {
     /// Called when Build Your Own is tapped
     var onBuildYourOwn: (() -> Void)?
 
-    /// Called when Event Training is tapped
-    var onEventTraining: (() -> Void)?
-
     /// Called when Keep Current Plan is tapped (Change Plan flow only)
     var onKeepCurrent: (() -> Void)?
 
@@ -70,9 +67,6 @@ struct PlanSelectionView: View {
 
                     // Build Your Own
                     buildYourOwnCard
-
-                    // Event Training
-                    eventTrainingCard
 
                     // Keep Current (Change Plan only)
                     if isChangePlanFlow {
@@ -166,48 +160,6 @@ struct PlanSelectionView: View {
                         .foregroundColor(.atlasText)
 
                     Text("Pick exercises, days, and sets yourself")
-                        .font(.system(size: 14))
-                        .foregroundColor(.atlasTextMuted)
-                }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.atlasTextMuted)
-            }
-            .padding(16)
-            .background(Color.white.opacity(0.05))
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-
-    // MARK: - Event Training
-
-    private var eventTrainingCard: some View {
-        Button(action: { onEventTraining?() }) {
-            HStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(Color.atlasAmber.opacity(0.15))
-                        .frame(width: 48, height: 48)
-
-                    Image(systemName: "trophy.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.atlasAmber)
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Train for an Event")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.atlasText)
-
-                    Text("HYROX, marathon, triathlon, and more")
                         .font(.system(size: 14))
                         .foregroundColor(.atlasTextMuted)
                 }

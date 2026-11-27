@@ -11,7 +11,7 @@ struct ProfileView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 Color.atlasBackground
                     .ignoresSafeArea()
@@ -19,6 +19,9 @@ struct ProfileView: View {
                 if let profile = profile {
                     ScrollView {
                         VStack(spacing: 24) {
+                            // Training setup (moved here from its own tab)
+                            trainingSetupSection
+                            
                             // Personal Info
                             personalInfoSection(profile: profile)
                             
@@ -40,11 +43,27 @@ struct ProfileView: View {
                         .foregroundColor(.atlasTextMuted)
                 }
             }
-            .navigationTitle("Profile")
+            .navigationTitle("More")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
         }
     }    
+    
+    // MARK: - Training Setup Section
+    
+    private var trainingSetupSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionHeader("Training")
+            
+            VStack(spacing: 0) {
+                NavigationLink(destination: TrainingProgramView()) {
+                    profileRow(label: "Training Plan", value: "Schedule & routines")
+                }
+            }
+            .background(Color.atlasCardDark)
+            .cornerRadius(10)
+        }
+    }
     
     // MARK: - Personal Info Section
     
@@ -112,7 +131,7 @@ struct ProfileView: View {
                 Divider().background(Color.white.opacity(0.1))
                 
                 NavigationLink(destination: EditTrainingPreferencesView(profile: profile)) {
-                    profileRow(label: "Equipment", value: truncate(profile.availableEquipment, length: 25))
+                    profileRow(label: "Equipment", value: profile.availableEquipment == nil ? "Not set" : SteadyEquipment.from(profile.availableEquipment).title)
                 }
                 
                 Divider().background(Color.white.opacity(0.1))
@@ -123,11 +142,6 @@ struct ProfileView: View {
             }
             .background(Color.white.opacity(0.05))
             .cornerRadius(12)
-            
-            Text("Changes will be applied at your next weekly check-in")
-                .font(.system(size: 12))
-                .foregroundColor(.atlasTextMuted)
-                .padding(.horizontal, 4)
         }
     }
 
@@ -141,13 +155,7 @@ private func goalsSection(profile: UserProfile) -> some View {
         
         VStack(spacing: 0) {
             NavigationLink(destination: EditGoalsView(profile: profile)) {
-                profileRow(label: "Primary Goal", value: formatGoal(profile.primaryGoal))
-            }
-            
-            Divider().background(Color.white.opacity(0.1))
-            
-            NavigationLink(destination: EditGoalsView(profile: profile)) {
-                profileRow(label: "Secondary Goal", value: formatGoal(profile.secondaryGoal))
+                profileRow(label: "Goal", value: formatGoal(profile.primaryGoal))
             }
             
             Divider().background(Color.white.opacity(0.1))
@@ -175,11 +183,6 @@ private var appSettingsSection: some View {
             Divider().background(Color.white.opacity(0.1))
             
             unitSystemRow
-            
-            Divider().background(Color.white.opacity(0.1))
-            
-            // Sprint 5: Morning Brief Notification Toggle
-            morningBriefToggleRow
             
             Divider().background(Color.white.opacity(0.1))
             
@@ -236,42 +239,6 @@ private var appSettingsSection: some View {
         )
     }
 
-    // MARK: - Morning Brief Toggle (Sprint 5)
-
-    private var morningBriefToggleRow: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Morning Brief")
-                    .font(.system(size: 16))
-                    .foregroundColor(.atlasText)
-
-                Text("Daily reminder at 7:00 AM")
-                    .font(.system(size: 12))
-                    .foregroundColor(.atlasTextMuted)
-            }
-
-            Spacer()
-
-            Toggle("", isOn: morningBriefBinding)
-                .tint(.atlasPrimary)
-                .labelsHidden()
-        }
-        .padding(16)
-    }
-
-    private var morningBriefBinding: Binding<Bool> {
-        Binding(
-            get: { profile?.morningBriefNotificationEnabled ?? false },
-            set: { newValue in
-                if let p = profile {
-                    p.morningBriefNotificationEnabled = newValue
-                    try? modelContext.save()
-                    NotificationManager.shared.scheduleMorningBriefReminder(enabled: newValue)
-                }
-            }
-        )
-    }
-
     // MARK: - Helper Views
     
     private func sectionHeader(_ title: String) -> some View {
@@ -314,8 +281,7 @@ private var appSettingsSection: some View {
     }
     
     private func formatGoal(_ goal: String?) -> String {
-        guard let goal = goal else { return "Not set" }
-        return goal.replacingOccurrences(of: "_", with: " ").capitalized
+        SteadyGoal.displayName(for: goal)
     }
     
     private func truncate(_ text: String?, length: Int) -> String {
@@ -595,17 +561,16 @@ struct EditTrainingPreferencesView: View {
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.atlasTextMuted)
                         
-                        TextEditor(text: $equipment)
-                            .frame(minHeight: 80)
-                            .padding(12)
-                            .background(Color.white.opacity(0.05))
-                            .cornerRadius(10)
-                            .foregroundColor(.atlasText)
-                            .scrollContentBackground(.hidden)
-                        
-                        Text("e.g., Full gym, dumbbells only, home gym with rack")
-                            .font(.system(size: 12))
-                            .foregroundColor(.atlasTextMuted)
+                        ForEach(SteadyEquipment.allCases) { option in
+                            SteadyOptionRow(
+                                title: option.title,
+                                subtitle: option.subtitle,
+                                icon: option.icon,
+                                isSelected: equipment == option.title
+                            ) {
+                                equipment = option.title
+                            }
+                        }
                     }
                     
                     // Constraints
@@ -627,14 +592,10 @@ struct EditTrainingPreferencesView: View {
                             .foregroundColor(.atlasTextMuted)
                     }
                     
-                    // Note about changes
-                    Text("Changes will be applied at your next weekly check-in")
+                    Text("Plan recommendations use these. Your current plan stays until you change it.")
                         .font(.system(size: 13))
-                        .foregroundColor(.atlasAccent)
-                        .padding(12)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.atlasAccent.opacity(0.1))
-                        .cornerRadius(10)
+                        .foregroundColor(.atlasTextMuted)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     
                     Spacer().frame(height: 40)
                 }
@@ -670,7 +631,7 @@ struct EditTrainingPreferencesView: View {
         daysPerWeek = profile.trainingDaysPerWeek ?? 4
         minutesPerSession = profile.trainingMinutesPerSession ?? 45
         experienceLevel = profile.experienceLevel ?? ""
-        equipment = profile.availableEquipment ?? ""
+        equipment = profile.availableEquipment.map { SteadyEquipment.from($0).title } ?? ""
         constraints = profile.trainingConstraints ?? ""
     }
     
@@ -694,13 +655,6 @@ struct EditGoalsView: View {
     @State private var secondaryGoal: String = ""
     @State private var goalWeight: String = ""
     
-    let goalOptions: [(id: String, title: String, subtitle: String, icon: String)] = [
-        ("live_longer", "Live Longer", "Maximize healthspan and lifespan", "heart.fill"),
-        ("look_better", "Look Better", "Improve body composition and aesthetics", "figure.stand"),
-        ("feel_better", "Feel Better", "Boost energy, mood, and recovery", "bolt.fill"),
-        ("get_stronger", "Get Stronger", "Build strength and muscle", "figure.strengthtraining.traditional"),
-        ("sport_performance", "Sport/Performance", "Train for specific sport or event", "trophy.fill")
-    ]
     
     var body: some View {
         ZStack {
@@ -709,51 +663,23 @@ struct EditGoalsView: View {
             
             ScrollView {
                 VStack(spacing: 24) {
-                    // Primary Goal
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Primary Goal")
+                    // Goal
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Goal")
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.atlasTextMuted)
                         
-                        ForEach(goalOptions, id: \.id) { goal in
-                            GoalOptionRow(
+                        ForEach(SteadyGoal.allCases) { goal in
+                            SteadyOptionRow(
                                 title: goal.title,
                                 subtitle: goal.subtitle,
                                 icon: goal.icon,
-                                isSelected: primaryGoal == goal.id,
-                                isDisabled: secondaryGoal == goal.id
+                                isSelected: primaryGoal == goal.rawValue
                             ) {
-                                primaryGoal = goal.id
+                                primaryGoal = goal.rawValue
                             }
                         }
                     }
-                    
-                    Divider()
-                        .background(Color.white.opacity(0.1))
-                        .padding(.vertical, 8)
-                    
-                    // Secondary Goal
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Secondary Goal")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.atlasTextMuted)
-                        
-                        ForEach(goalOptions, id: \.id) { goal in
-                            GoalOptionRow(
-                                title: goal.title,
-                                subtitle: goal.subtitle,
-                                icon: goal.icon,
-                                isSelected: secondaryGoal == goal.id,
-                                isDisabled: primaryGoal == goal.id
-                            ) {
-                                secondaryGoal = goal.id
-                            }
-                        }
-                    }
-                    
-                    Divider()
-                        .background(Color.white.opacity(0.1))
-                        .padding(.vertical, 8)
                     
                     // Goal Weight
                     VStack(alignment: .leading, spacing: 8) {
@@ -770,15 +696,6 @@ struct EditGoalsView: View {
                                 .foregroundColor(.atlasTextMuted)
                         }
                     }
-                    
-                    // Note about changes
-                    Text("Goal changes will be reflected at your next weekly check-in")
-                        .font(.system(size: 13))
-                        .foregroundColor(.atlasAccent)
-                        .padding(12)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.atlasAccent.opacity(0.1))
-                        .cornerRadius(10)
                     
                     Spacer().frame(height: 40)
                 }
@@ -803,7 +720,7 @@ struct EditGoalsView: View {
                 }
                 .foregroundColor(.atlasPrimary)
                 .fontWeight(.semibold)
-                .disabled(primaryGoal.isEmpty || secondaryGoal.isEmpty)
+                .disabled(primaryGoal.isEmpty)
             }
         }
         .onAppear {
@@ -819,7 +736,7 @@ struct EditGoalsView: View {
     
     private func saveChanges() {
         profile.primaryGoal = primaryGoal.isEmpty ? nil : primaryGoal
-        profile.secondaryGoal = secondaryGoal.isEmpty ? nil : secondaryGoal
+        profile.secondaryGoal = nil
         profile.goalWeight = Double(goalWeight)
     }
 }
@@ -900,7 +817,7 @@ struct HealthPermissionsView: View {
                     .font(.system(size: 24, weight: .semibold))
                     .foregroundColor(.atlasText)
                 
-                Text("atlas uses Apple Health to track your sleep, heart rate, and activity data.")
+                Text("Recovery reads your sleep, HRV and resting heart rate from Apple Health. Weight, body fat and workouts come from there too.")
                     .font(.system(size: 16))
                     .foregroundColor(.atlasTextMuted)
                     .multilineTextAlignment(.center)
