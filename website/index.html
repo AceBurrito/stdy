@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>STDY: Strength &amp; Recovery</title>
+  <meta name="description" content="STDY reads your sleep, HRV and resting heart rate, makes one call for the day, and tracks whether your lifting and your body are moving. 7 days free, then $14.99 once.">
+  <meta name="theme-color" content="#0f1011">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="wordmark" href="index.html" aria-label="STDY home">STDY</a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="#recovery">Recovery</a>
+      <a href="#strength">Strength</a>
+      <a href="#body">Body</a>
+      <a href="#pricing">Pricing</a>
+      <a href="support.html">Support</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <div class="label">Strength · Recovery · Body</div>
+        <h1>Know how hard to train <em>today.</em></h1>
+        <p class="lede">STDY reads your sleep, HRV and resting heart rate from Apple Health and makes one call for the day. Then it shows you the workout to match, and tracks whether your lifts and your body are actually moving.</p>
+        <div class="cta-row">
+          <!-- Replace href with your App Store link, and this button with Apple's official badge artwork -->
+          <a class="button" href="#app-store-link" id="app-store-button">
+            <span><small>Download on the</small>App Store</span>
+          </a>
+          <span class="price-note"><strong>7 days free</strong>, then $14.99 once. No subscription.</span>
+        </div>
+      </div>
+
+      <figure class="today-card" aria-label="Example of the STDY Today screen">
+        <div class="recovery">
+          <div class="recovery-body">
+            <div class="label">Recovery</div>
+            <div class="state">Manage it</div>
+            <p class="call">Some signals are down. Train, but keep 2–3 reps in reserve.</p>
+            <div class="signals">
+              <div class="signal">
+                <div class="label">HRV</div>
+                <div class="value">41 ms</div>
+                <div class="delta">−18% vs avg</div>
+                <div class="bar"><i class="on-amber"></i><i class="on-amber"></i><i></i><i></i></div>
+              </div>
+              <div class="signal">
+                <div class="label">RHR</div>
+                <div class="value">58 bpm</div>
+                <div class="delta">+3 vs avg</div>
+                <div class="bar"><i class="on-amber"></i><i class="on-amber"></i><i></i><i></i></div>
+              </div>
+              <div class="signal">
+                <div class="label">Sleep</div>
+                <div class="value">6.4h</div>
+                <div class="delta">6–7h</div>
+                <div class="bar"><i class="on-teal"></i><i class="on-teal"></i><i class="on-teal"></i><i></i></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="workout">
+          <div class="label">Today's training</div>
+          <h3>Lower: Hinge + Pull</h3>
+          <ol>
+            <li><span>01</span><span>Romanian Deadlift</span><span>3 × 8</span></li>
+            <li><span>02</span><span>Chest-Supported Row</span><span>3 × 10</span></li>
+            <li><span>03</span><span>Bulgarian Split Squat</span><span>3 × 10</span></li>
+          </ol>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <section class="block" id="recovery">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="label">Recovery</div>
+        <h2>One call each morning</h2>
+        <p>Your HRV and resting heart rate are compared with your own 30-day average, not population norms. Sleep is scored against the hours you actually got. Missing data is left out, never counted against you.</p>
+      </div>
+      <div class="states">
+        <div class="state-card ready">
+          <div class="range">85–100</div>
+          <h3>Ready to Crush</h3>
+          <p>Every signal is up. Go heavy, chase a top set.</p>
+        </div>
+        <div class="state-card good">
+          <div class="range">65–84</div>
+          <h3>Good to Go</h3>
+          <p>Recovery is solid. Train as planned.</p>
+        </div>
+        <div class="state-card manage">
+          <div class="range">40–64</div>
+          <h3>Manage It</h3>
+          <p>Some signals are down. Hold your weights and keep 2–3 reps in reserve.</p>
+        </div>
+        <div class="state-card recover">
+          <div class="range">0–39</div>
+          <h3>Recover</h3>
+          <p>Your body is behind. Walk, stretch, or cut volume in half.</p>
+        </div>
+      </div>
+      <p class="weights">Weighting: sleep 40%, HRV 35%, resting heart rate 25%.</p>
+    </div>
+  </section>
+
+  <section class="block" id="strength">
+    <div class="wrap two-up">
+      <div>
+        <div class="section-head">
+          <div class="label">Strength</div>
+          <h2>Sets that match your plan</h2>
+          <p>Log a session in a few taps. STDY counts working sets for every muscle group against what your plan calls for, and flags when the plan itself is too light to grow.</p>
+        </div>
+        <ul class="points">
+          <li><strong>Weekly sets per muscle</strong><span>Compound lifts count half a set for the muscles that help, so rows count toward biceps and presses toward triceps.</span></li>
+          <li><strong>Progression you can see</strong><span>Estimated 1RM, top set and volume for every lift, with new bests marked as they happen.</span></li>
+          <li><strong>Last time, right there</strong><span>Each exercise shows what you did last session and what to try next.</span></li>
+        </ul>
+      </div>
+      <div class="panel" aria-label="Example of weekly sets per muscle">
+        <div class="panel-title">Sets per muscle · this week</div>
+        <div class="muscle"><span>Chest</span><div class="track"><b style="width:60%"></b><i style="left:50%"></i></div><span class="count">12<small>/10</small></span></div>
+        <div class="muscle"><span>Back</span><div class="track"><b style="width:70%"></b><i style="left:60%"></i></div><span class="count">14<small>/12</small></span></div>
+        <div class="muscle"><span>Quads</span><div class="track"><b class="under" style="width:35%"></b><i style="left:50%"></i></div><span class="count">7<small>/10</small></span></div>
+        <div class="muscle"><span>Hams/Glutes</span><div class="track"><b style="width:55%"></b><i style="left:50%"></i></div><span class="count">11<small>/10</small></span></div>
+        <div class="muscle"><span>Shoulders</span><div class="track"><b class="under" style="width:40%"></b><i style="left:50%"></i></div><span class="count">8<small>/10</small></span></div>
+        <div class="muscle"><span>Biceps</span><div class="track"><b style="width:45%"></b><i style="left:40%"></i></div><span class="count">7<small>/6</small></span></div>
+        <div class="muscle"><span>Triceps</span><div class="track"><b style="width:50%"></b><i style="left:40%"></i></div><span class="count">8<small>/6</small></span></div>
+        <div class="muscle"><span>Core</span><div class="track"><b class="under" style="width:20%"></b><i style="left:40%"></i></div><span class="count">3<small>/6</small></span></div>
+        <p class="foot">The tick is your plan's target. Example data.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="body">
+    <div class="wrap two-up">
+      <div class="panel" aria-label="Example of the body snapshot">
+        <div class="panel-title">Body</div>
+        <div class="stats">
+          <div class="stat">
+            <div class="label">Weight</div>
+            <div class="value">184.2 <small>lbs</small></div>
+            <div class="note num">−0.9 lbs / 7d</div>
+          </div>
+          <div class="stat">
+            <div class="label">Body fat</div>
+            <div class="value">18.4 <small>%</small></div>
+          </div>
+          <div class="stat">
+            <div class="label">Metabolic age</div>
+            <div class="value">31 <small>yrs</small></div>
+            <div class="note good">4 yrs younger</div>
+          </div>
+        </div>
+        <div class="goal-line">
+          <span><span class="label">Goal</span>&nbsp; <span class="num">15.0% · 176.8 lbs</span></span>
+          <span class="num" style="color:var(--muted)">7.4 lbs to lose</span>
+        </div>
+      </div>
+      <div>
+        <div class="section-head">
+          <div class="label">Body</div>
+          <h2>Read the trend, not the scale</h2>
+          <p>Daily weigh-ins bounce around. STDY smooths them into a 7-day trend and a weekly rate, pulls body fat from your smart scale through Apple Health, and turns a target body fat into a goal weight that keeps your lean mass.</p>
+        </div>
+        <ul class="points">
+          <li><strong>Lean mass and fat mass</strong><span>Split out from every reading that has body fat.</span></li>
+          <li><strong>Pace check</strong><span>A heads-up if you're losing more than 1% of body weight a week, the point where muscle starts to go.</span></li>
+          <li><strong>Progress photos</strong><span>Side by side, stored with the rest of your data.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="label">Privacy</div>
+        <h2>Your data stays yours</h2>
+        <p>There's no STDY account and no STDY server. Your training log lives on your iPhone and in your own iCloud, and your health readings stay in Apple Health.</p>
+      </div>
+      <div class="promises">
+        <div class="promise"><strong>No account</strong><span>Open the app and start. Nothing to sign up for.</span></div>
+        <div class="promise"><strong>No ads, no tracking</strong><span>No analytics or advertising code in the app at all.</span></div>
+        <div class="promise"><strong>Your iCloud</strong><span>Sync uses your private iCloud storage, which we can't see.</span></div>
+        <div class="promise"><strong>Read, not sold</strong><span>Health data is used only to show you your numbers.</span></div>
+      </div>
+      <p class="weights"><a href="privacy.html">Read the privacy policy</a></p>
+    </div>
+  </section>
+
+  <section class="block pricing" id="pricing">
+    <div class="wrap">
+      <div>
+        <div class="label">Pricing</div>
+        <div class="price num"><sup>$</sup>14.99</div>
+        <p class="price-sub">Once. Every feature, every update to version 1. Try it free for 7 days first.</p>
+        <a class="button" href="#app-store-link">
+          <span><small>Download on the</small>App Store</span>
+        </a>
+      </div>
+      <div class="table-scroll">
+        <table class="compare">
+          <caption class="label">What you'd pay over two years</caption>
+          <tbody>
+            <tr class="us"><th scope="row">STDY</th><td>$14.99</td></tr>
+            <tr><th scope="row">A workout log subscription</th><td>~$48–60</td></tr>
+            <tr><th scope="row">A recovery app subscription</th><td>~$60</td></tr>
+            <tr><th scope="row">Both</th><td>~$108–120</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>© 2026 STDY</span>
+    <nav aria-label="Footer">
+      <a href="privacy.html">Privacy</a>
+      <a href="support.html">Support</a>
+    </nav>
+    <p class="disclaimer">STDY is a training tool, not a medical device. It doesn't diagnose or treat any condition. Talk to a doctor before starting a new training or diet program. Apple Health and iCloud are trademarks of Apple Inc.</p>
+  </div>
+</footer>
+
+</body>
+</html>
