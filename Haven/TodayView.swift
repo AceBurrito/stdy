@@ -62,11 +62,16 @@ struct TodayView: View {
         BodySnapshot.from(entries: Array(bodyCompEntries.prefix(60)), profile: profiles.first)
     }
 
+    private var bodyState: BodyState {
+        BodyState.from(entries: Array(bodyCompEntries.prefix(120)), profile: profiles.first)
+    }
+
     private var bodyGoal: BodyGoal? {
-        BodyGoal.from(
-            state: BodyState.from(entries: Array(bodyCompEntries.prefix(120)), profile: profiles.first),
-            targetBodyFat: profiles.first?.targetBodyFatPercent
-        )
+        BodyGoal.from(state: bodyState, targetBodyFat: profiles.first?.targetBodyFatPercent)
+    }
+
+    private var metabolicAge: MetabolicAge? {
+        MetabolicAge.estimate(profile: profiles.first, state: bodyState)
     }
 
     private var insights: [DailyInsight] {
@@ -86,7 +91,7 @@ struct TodayView: View {
             lifts: LiftAnalytics.histories(sessions: recentSessions, resolver: resolver),
             volumeRows: MuscleVolume.rows(sessions: recentSessions, window: .thisWeek, experience: profiles.first?.experienceLevel, resolver: resolver,
                                           plan: PlanVolume.weeklySets(program: activePrograms.first, resolver: resolver)),
-            bodyState: BodyState.from(entries: Array(bodyCompEntries.prefix(120)), profile: profiles.first),
+            bodyState: bodyState,
             bodyGoal: bodyGoal,
             plannedDaysLeftThisWeek: daysLeft,
             sessionsThisWeek: recentSessions.filter { $0.date >= weekStart }.count,
@@ -112,6 +117,8 @@ struct TodayView: View {
                         showRecoveryDetail = true
                     }
 
+                    BodySnapshotCard(snapshot: bodySnapshot, goal: bodyGoal, metabolicAge: metabolicAge)
+
                     TrainingDayPanel(
                         todaysWorkout: todaysPlannedWorkout,
                         isCompleted: isTrainingComplete,
@@ -127,8 +134,6 @@ struct TodayView: View {
                     if !todaysInsights.isEmpty {
                         InsightsCard(insights: todaysInsights)
                     }
-
-                    BodySnapshotCard(snapshot: bodySnapshot, goal: bodyGoal)
 
                     if isTrainingComplete && !hasSeenWidgetPrompt && !widgetAlreadyAdded {
                         WidgetPromptCard(
@@ -231,6 +236,7 @@ struct TodayView: View {
 struct BodySnapshotCard: View {
     let snapshot: BodySnapshot
     var goal: BodyGoal? = nil
+    var metabolicAge: MetabolicAge? = nil
     @Environment(\.unitFormatter) private var unitFormatter
 
     var body: some View {
@@ -259,10 +265,10 @@ struct BodySnapshotCard: View {
                     )
                     separator
                     column(
-                        label: "Lean mass",
-                        value: snapshot.leanMass.map { formattedWeight($0) } ?? "—",
-                        unit: snapshot.leanMass == nil ? "" : unitFormatter.weightUnit,
-                        footnote: snapshot.leanMass == nil ? "needs body fat" : nil
+                        label: "Metabolic age",
+                        value: metabolicAge.map { "\($0.years)" } ?? "—",
+                        unit: metabolicAge == nil ? "" : "yrs",
+                        footnote: metabolicAgeFootnote
                     )
                 }
                 if let goal {
@@ -281,6 +287,15 @@ struct BodySnapshotCard: View {
             }
         }
         .steadyPanel()
+    }
+
+    private var metabolicAgeFootnote: String {
+        guard let estimate = metabolicAge else {
+            return snapshot.bodyFatPercent == nil ? "needs body fat" : "needs age & height"
+        }
+        let diff = estimate.years - estimate.actualAge
+        if diff == 0 { return "same as your age" }
+        return "\(abs(diff)) \(diff < 0 ? "younger" : "older") than you"
     }
 
     private func goalStatus(_ goal: BodyGoal) -> String {
