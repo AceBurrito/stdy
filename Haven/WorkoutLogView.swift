@@ -2141,7 +2141,7 @@ struct RestTimerCard: View {
             
             HStack(spacing: 16) {
                 Text(timeString(timer.remainingSeconds))
-                    .font(.system(size: 36, weight: .light, design: .rounded))
+                    .font(.system(size: 36, weight: .light).monospacedDigit())
                     .foregroundColor(isComplete ? .atlasPrimary : .atlasText)
                     .monospacedDigit()
                 

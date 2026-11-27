@@ -61,7 +61,7 @@ struct WidgetInstructionsView: View {
     private func stepRow(number: Int, text: String) -> some View {
         HStack(alignment: .top, spacing: 16) {
             Text("\(number)")
-                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .font(.system(size: 14, weight: .bold).monospacedDigit())
                 .foregroundColor(.atlasBackground)
                 .frame(width: 28, height: 28)
                 .background(Color.atlasAmber)

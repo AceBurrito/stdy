@@ -16,28 +16,22 @@ struct PRCelebrationView: View {
                 
                 // Trophy icon with animation
                 ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.atlasPrimary.opacity(0.3), Color.atlasPrimary.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color.steadyRaised)
                         .frame(width: 120, height: 120)
                         .scaleEffect(showConfetti ? 1.0 : 0.8)
                     
-                    Image(systemName: "trophy.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(.atlasPrimary)
+                    Image(systemName: "trophy")
+                        .font(.system(size: 52, weight: .regular))
+                        .foregroundColor(.atlasAmber)
                         .scaleEffect(showConfetti ? 1.0 : 0.5)
                 }
                 .animation(.spring(response: 0.6, dampingFraction: 0.6), value: showConfetti)
                 
                 // Title
                 VStack(spacing: 8) {
-                    Text("Personal Record!")
-                        .font(.system(size: 32, weight: .bold))
+                    Text("New best")
+                        .font(SteadyType.display(34))
                         .foregroundColor(.atlasText)
                     
                     Text("You just set \(totalPRCount) new PR\(totalPRCount == 1 ? "" : "s")")

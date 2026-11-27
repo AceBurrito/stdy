@@ -1,5 +1,5 @@
 // TODAY VIEW — Steady
-// Layout: date line → Recovery hero → Today's training → Body snapshot.
+// Layout: date line → Recovery hero → Today's training → Insights → Body snapshot.
 // No habits, no streaks, no Pace. Recovery state drives the training guidance.
 
 import SwiftUI
@@ -15,6 +15,7 @@ struct TodayView: View {
     @Query(sort: \WorkoutSession.date, order: .reverse) private var allWorkoutSessions: [WorkoutSession]
     @Query(sort: \CardioSession.date, order: .reverse) private var allCardioSessions: [CardioSession]
     @Query(sort: \BodyCompEntry.date, order: .reverse) private var bodyCompEntries: [BodyCompEntry]
+    @Query private var customExercises: [CustomExercise]
 
     // Sheets
     @State private var showWorkoutLog = false
@@ -68,6 +69,32 @@ struct TodayView: View {
         )
     }
 
+    private var insights: [DailyInsight] {
+        let calendar = Calendar.current
+        let cutoff = calendar.date(byAdding: .day, value: -70, to: Date()) ?? Date()
+        let recentSessions = allWorkoutSessions.filter { $0.date >= cutoff }
+        let resolver = MuscleGroupResolver(customExercises: customExercises)
+        let weekStart = MuscleVolume.weekStart(for: Date())
+
+        let strengthDays = activePrograms.first?.workoutDays.filter { $0.dayType == "strength" } ?? []
+        let today = TodayTraining.todayDayOfWeek()          // 0 = Sunday
+        let remainingDays: Set<Int> = today == 0 ? [0] : Set(Array(today...6) + [0])
+        let daysLeft = strengthDays.filter { remainingDays.contains($0.dayOfWeek) }.count
+
+        let input = InsightInputs(
+            metrics: Array(allMetrics.prefix(40)),
+            lifts: LiftAnalytics.histories(sessions: recentSessions, resolver: resolver),
+            volumeRows: MuscleVolume.rows(sessions: recentSessions, window: .thisWeek, experience: profiles.first?.experienceLevel, resolver: resolver),
+            bodyState: BodyState.from(entries: Array(bodyCompEntries.prefix(120)), profile: profiles.first),
+            bodyGoal: bodyGoal,
+            plannedDaysLeftThisWeek: daysLeft,
+            sessionsThisWeek: recentSessions.filter { $0.date >= weekStart }.count,
+            plannedSessionsPerWeek: strengthDays.isEmpty ? nil : strengthDays.count,
+            unitFormatter: unitFormatter
+        )
+        return DailyInsightsEngine.insights(input)
+    }
+
     private var recentPRCount: Int {
         DataController(modelContext: modelContext).recentPRs(days: 7).count
     }
@@ -94,6 +121,11 @@ struct TodayView: View {
                         onStartWorkout: { showWorkoutLog = true },
                         onStartCardio: { showCardioLog = true }
                     )
+
+                    let todaysInsights = insights
+                    if !todaysInsights.isEmpty {
+                        InsightsCard(insights: todaysInsights)
+                    }
 
                     BodySnapshotCard(snapshot: bodySnapshot, goal: bodyGoal)
 

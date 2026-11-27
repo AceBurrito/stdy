@@ -197,6 +197,21 @@ private var appSettingsSection: some View {
             
             Divider().background(Color.white.opacity(0.1))
             
+            Toggle(isOn: weeklySummaryBinding) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Weekly summary")
+                        .font(.system(size: 16))
+                        .foregroundColor(.atlasText)
+                    Text("Sunday 6 PM: sessions, sets per muscle, new bests, weight trend")
+                        .font(.system(size: 12))
+                        .foregroundColor(.atlasTextMuted)
+                }
+            }
+            .tint(.atlasPrimary)
+            .padding(16)
+            
+            Divider().background(Color.white.opacity(0.1))
+            
             HStack {
                 Text("Version")
                     .font(.system(size: 16))
@@ -217,6 +232,26 @@ private var appSettingsSection: some View {
 }
     
     
+    // MARK: - Weekly Summary Toggle
+
+    @AppStorage(WeeklySummary.enabledKey) private var weeklySummaryEnabled = true
+
+    private var weeklySummaryBinding: Binding<Bool> {
+        Binding(
+            get: { weeklySummaryEnabled },
+            set: { enabled in
+                weeklySummaryEnabled = enabled
+                if enabled {
+                    NotificationManager.shared.requestPermission { _ in
+                        WeeklySummary.refresh(modelContext: modelContext, unitFormatter: unitFormatter)
+                    }
+                } else {
+                    WeeklySummary.disable()
+                }
+            }
+        )
+    }
+
     // MARK: - Unit System Row
 
     private var unitSystemRow: some View {
