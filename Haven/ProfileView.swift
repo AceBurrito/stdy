@@ -5,9 +5,18 @@ struct ProfileView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.unitFormatter) private var unitFormatter
     @Query private var profiles: [UserProfile]
+    @State private var showingBodyGoal = false
     
     private var profile: UserProfile? {
         profiles.first
+    }
+    
+    /// "15% · 172 lbs" or "Not set"
+    private func bodyGoalText(_ profile: UserProfile) -> String {
+        guard let target = profile.targetBodyFatPercent else { return "Not set" }
+        let percent = String(format: "%.1f%%", target * 100)
+        guard let weight = profile.goalWeight else { return percent }
+        return percent + " · " + unitFormatter.displayWeightInt(weight)
     }
     
     var body: some View {
@@ -46,6 +55,7 @@ struct ProfileView: View {
             .navigationTitle("More")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
+            .sheet(isPresented: $showingBodyGoal) { BodyGoalView() }
         }
     }    
     
@@ -160,9 +170,10 @@ private func goalsSection(profile: UserProfile) -> some View {
             
             Divider().background(Color.white.opacity(0.1))
             
-            NavigationLink(destination: EditGoalsView(profile: profile)) {
-                profileRow(label: "Goal Weight", value: profile.goalWeight != nil ? unitFormatter.displayWeightInt(profile.goalWeight!) : "Not set")
+            Button { showingBodyGoal = true } label: {
+                profileRow(label: "Body Fat Goal", value: bodyGoalText(profile))
             }
+            .buttonStyle(.plain)
         }
         .background(Color.white.opacity(0.05))
         .cornerRadius(12)
@@ -653,7 +664,6 @@ struct EditGoalsView: View {
     
     @State private var primaryGoal: String = ""
     @State private var secondaryGoal: String = ""
-    @State private var goalWeight: String = ""
     
     
     var body: some View {
@@ -678,22 +688,6 @@ struct EditGoalsView: View {
                             ) {
                                 primaryGoal = goal.rawValue
                             }
-                        }
-                    }
-                    
-                    // Goal Weight
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Goal Weight (optional)")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.atlasTextMuted)
-                        
-                        HStack {
-                            TextField("175", text: $goalWeight)
-                                .keyboardType(.decimalPad)
-                                .textFieldStyle(atlasTextFieldStyle())
-                            
-                            Text(unitFormatter.weightUnit)
-                                .foregroundColor(.atlasTextMuted)
                         }
                     }
                     
@@ -731,13 +725,11 @@ struct EditGoalsView: View {
     private func loadCurrentValues() {
         primaryGoal = profile.primaryGoal ?? ""
         secondaryGoal = profile.secondaryGoal ?? ""
-        goalWeight = profile.goalWeight != nil ? "\(Int(profile.goalWeight!))" : ""
     }
     
     private func saveChanges() {
         profile.primaryGoal = primaryGoal.isEmpty ? nil : primaryGoal
         profile.secondaryGoal = nil
-        profile.goalWeight = Double(goalWeight)
     }
 }
 

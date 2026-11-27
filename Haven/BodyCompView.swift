@@ -1,3 +1,9 @@
+// BodyCompView.swift
+// Steady — Body tab.
+// Layout: headline (weight trend, body fat, lean mass) → trend chart → body fat
+// goal → metabolic age → recent entries → progress photos.
+// Weight and body fat come from manual entries plus an Apple Health import.
+
 import SwiftUI
 import SwiftData
 import PhotosUI
@@ -8,546 +14,749 @@ struct BodyCompView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.unitFormatter) private var unitFormatter
     @Query private var profiles: [UserProfile]
-    @Query(sort: \BodyCompEntry.date, order: .reverse) private var bodyCompEntries: [BodyCompEntry]
+    @Query(sort: \BodyCompEntry.date, order: .reverse) private var entries: [BodyCompEntry]
     @Query(sort: \ProgressPhoto.date, order: .reverse) private var progressPhotos: [ProgressPhoto]
-    
-    @State private var showingAddWeight = false
-    @State private var showingAddPhoto = false
-    @State private var selectedPhotoItem: PhotosPickerItem?
+
+    // Sheets
+    @State private var showingLog = false
+    @State private var showingGoal = false
+    @State private var showingSettings = false
+    @State private var showingPhotoComparison = false
     @State private var showingImageSourcePicker = false
+    @State private var showingPhotoLibrary = false
     @State private var showingCamera = false
+    @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var capturedImage: UIImage?
+
+    // Chart
+    @State private var chartMetric: BodyMetric = .weight
+    @State private var chartRange: BodyChartRange = .quarter
+
+    // Face ID lock
     @AppStorage("bodyCompProtectionEnabled") private var protectionEnabled = false
-@State private var isUnlocked = false
-@State private var showingSettings = false
-@State private var showingPhotoComparison = false
-    
-    private var userProfile: UserProfile? {
-        profiles.first
+    @State private var isUnlocked = false
+
+    private var profile: UserProfile? { profiles.first }
+    private var state: BodyState { BodyState.from(entries: entries, profile: profile) }
+    private var goal: BodyGoal? { BodyGoal.from(state: state, targetBodyFat: profile?.targetBodyFatPercent) }
+    private var metabolicAge: MetabolicAge? { MetabolicAge.estimate(profile: profile, state: state) }
+
+    /// Earliest body fat reading, the starting point of the goal bar
+    private var firstBodyFat: Double? {
+        entries.last(where: { ($0.bodyFat ?? 0) > 0 })?.bodyFat
     }
-    
-    // Calculate 7-day average
-    private var currentWeight: Double {
-        bodyCompEntries.first?.weight ?? userProfile?.weight ?? 0
+
+    private var chartPoints: [BodyDayPoint] {
+        chartMetric == .weight ? state.weightPoints : BodySeries.points(for: chartMetric, entries: entries)
     }
-    
-    private var sevenDayAverage: Double {
-        let recent = Array(bodyCompEntries.prefix(7))
-        guard !recent.isEmpty else { return currentWeight }
-        let sum = recent.reduce(0.0) { $0 + $1.weight }
-        return sum / Double(recent.count)
+
+    private var chartGoal: Double? {
+        switch chartMetric {
+        case .weight: return goal?.goalWeight
+        case .bodyFat: return profile?.targetBodyFatPercent
+        case .leanMass: return nil
+        }
     }
-    
-    private var weightChange: Double {
-        guard bodyCompEntries.count >= 7 else { return 0 }
-        let recent = bodyCompEntries[0].weight
-        let weekAgo = bodyCompEntries[min(6, bodyCompEntries.count - 1)].weight
-        return recent - weekAgo
-    }
-    
+
+    // MARK: - Body
+
     var body: some View {
-    ZStack {
-        if protectionEnabled && !isUnlocked {
-            // Lock Screen
-            ZStack {
-                Color.atlasBackground
-                    .ignoresSafeArea()
-                
-                VStack(spacing: 24) {
-                    Spacer()
-                    
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(.atlasTextMuted)
-                    
-                    Text("Body Composition")
-                        .font(.system(size: 24, weight: .light))
-                        .foregroundColor(.atlasText)
-                    
-                    Text("This section is protected")
-                        .font(.system(size: 15))
-                        .foregroundColor(.atlasTextMuted)
-                    
-                    Spacer()
-                    
-                    Button(action: authenticate) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "faceid")
-                                .font(.system(size: 20))
-                            Text("Unlock with Face ID")
-                                .font(.system(size: 16, weight: .semibold))
-                        }
-                        .foregroundColor(.atlasBackground)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.atlasPrimary)
-                        .cornerRadius(12)
-                    }
-                    .padding(.horizontal, 40)
-                    
-                    Spacer()
-                        .frame(height: 60)
+        NavigationStack {
+            Group {
+                if protectionEnabled && !isUnlocked {
+                    lockScreen
+                } else {
+                    content
                 }
             }
-        } else {
-            bodyContent
+            .background(Color.atlasBackground.ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
+        }
+        .onAppear {
+            if protectionEnabled && !isUnlocked { authenticate() }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .background && protectionEnabled { isUnlocked = false }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("LockBodyTab"))) { _ in
+            if protectionEnabled { isUnlocked = false }
         }
     }
-    .onAppear {
-        if protectionEnabled && !isUnlocked {
-            authenticate()
-        }
-    }
-    .onChange(of: scenePhase) { oldPhase, newPhase in
-        if newPhase == .background && protectionEnabled {
-            isUnlocked = false
-        }
-    }
-    .onReceive(NotificationCenter.default.publisher(for: Notification.Name("LockBodyTab"))) { _ in
-        if protectionEnabled {
-            isUnlocked = false
-        }
-    }
-}
 
-private func authenticate() {
-    let context = LAContext()
-    var error: NSError?
-    
-    if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
-        context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: "Unlock Body Composition") { success, _ in
-            DispatchQueue.main.async {
-                if success {
-                    withAnimation {
-                        isUnlocked = true
-                    }
-                }
-            }
-        }
-    }
-}
+    // MARK: - Lock
 
-
-
-
-private var bodyContent: some View {
-    ZStack {
-        Color.atlasBackground
-            .ignoresSafeArea()
-        
-        ScrollView {
-            VStack(spacing: 24) {
-                // Weight Tracking Section
-                weightTrackingSection
-                
-                // Progress Photos Section
-                progressPhotosSection
-                
-                
-                Spacer()
-            }
-            .padding(24)
-        }
-    }
-    .navigationTitle("Body Composition")
-    .navigationBarTitleDisplayMode(.inline)
-    .toolbar {
-        ToolbarItem(placement: .navigationBarTrailing) {
-            Button(action: { showingSettings = true }) {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 16))
-                    .foregroundColor(.atlasTextMuted)
-            }
-        }
-    }
-    .sheet(isPresented: $showingSettings) {
-        BodyCompSettingsView()
-    }
-    .sheet(isPresented: $showingAddWeight) {
-        AddWeightView()
-    }
-    .confirmationDialog("Add Photo", isPresented: $showingImageSourcePicker) {
-        Button("Take Photo") {
-            showingCamera = true
-        }
-        Button("Choose from Library") {
-            showingAddPhoto = true
-        }
-        Button("Cancel", role: .cancel) { }
-    }
-    .photosPicker(
-        isPresented: $showingAddPhoto,
-        selection: $selectedPhotoItem,
-        matching: .images
-    )
-    .fullScreenCover(isPresented: $showingCamera) {
-        CameraView(image: $capturedImage)
-    }
-    .onChange(of: selectedPhotoItem) { oldValue, newValue in
-        if let item = newValue {
-            loadPhoto(item)
-        }
-    }
-    .onChange(of: capturedImage) { oldValue, newValue in
-        if let image = newValue {
-            savePhoto(image)
-            capturedImage = nil
-        }
-    }
-    .sheet(isPresented: $showingPhotoComparison) {
-    PhotoComparisonView()
-    }
-}
-    
- // MARK: - Weight Tracking Section
-private var weightTrackingSection: some View {
-    VStack(alignment: .leading, spacing: 16) {
-        HStack {
-            Text("WEIGHT TRACKING")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(.atlasAccent)
-                .tracking(2)
-            
+    private var lockScreen: some View {
+        VStack(spacing: 18) {
             Spacer()
-            
-            Button(action: { showingAddWeight = true }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "plus.circle.fill")
-                    Text("Log")
-                }
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.atlasPrimary)
-            }
-        }
-        
-        HStack(spacing: 20) {
-            // Current weight
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Current")
-                    .font(.system(size: 13))
-                    .foregroundColor(.atlasTextMuted)
-                
-                Text(unitFormatter.displayWeight(currentWeight))
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundColor(.atlasText)
-            }
-            
-            Divider()
-                .frame(height: 40)
-            
-            // 7-day average
-            VStack(alignment: .leading, spacing: 4) {
-                Text("7-Day Avg")
-                    .font(.system(size: 13))
-                    .foregroundColor(.atlasTextMuted)
-                
-                Text(unitFormatter.displayWeight(sevenDayAverage))
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundColor(.atlasAccent)
-            }
-            
-            Divider()
-                .frame(height: 40)
-            
-            // Change
-            VStack(alignment: .leading, spacing: 4) {
-                Text("7-Day Change")
-                    .font(.system(size: 13))
-                    .foregroundColor(.atlasTextMuted)
-                
-                HStack(spacing: 4) {
-                    Image(systemName: weightChange > 0 ? "arrow.up.right" : weightChange < 0 ? "arrow.down.right" : "minus")
-                        .font(.system(size: 14))
-                    
-                    Text(unitFormatter.displayWeight(abs(weightChange)))
-                        .font(.system(size: 18, weight: .semibold))
-                }
-                .foregroundColor(weightChange > 0 ? .red : weightChange < 0 ? .green : .atlasTextMuted)
-            }
-        }
-        .padding(20)
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(12)
-        
-        // View History link
-        NavigationLink(destination: WeightHistoryView()) {
-            HStack {
-                Text("View History")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.atlasText)
-                
-                Spacer()
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14))
-                    .foregroundColor(.atlasTextMuted.opacity(0.5))
-            }
-            .padding(14)
-            .background(Color.white.opacity(0.03))
-            .cornerRadius(10)
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
-    
-    // MARK: - Progress Photos Section
-    // MARK: - Progress Photos Section
-private var progressPhotosSection: some View {
-    VStack(alignment: .leading, spacing: 16) {
-        HStack {
-            Text("PROGRESS PHOTOS")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(.atlasAccent)
-                .tracking(2)
-            
-            Spacer()
-            
-            if progressPhotos.count >= 2 {
-                Button(action: { showingPhotoComparison = true }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "square.split.2x1")
-                        Text("Compare")
-                    }
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.atlasAccent)
-                }
-                .padding(.trailing, 12)
-            }
-            
-            Button(action: { showingImageSourcePicker = true }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "camera.fill")
-                    Text("Add")
-                }
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.atlasPrimary)
-            }
-        }
-        
-        if progressPhotos.isEmpty {
-            Text("No photos yet. Track your visual progress over time!")
-                .font(.system(size: 14))
+            Image(systemName: "lock")
+                .font(.system(size: 34, weight: .regular))
                 .foregroundColor(.atlasTextMuted)
-                .padding(20)
-                .frame(maxWidth: .infinity)
-                .background(Color.white.opacity(0.05))
-                .cornerRadius(12)
-        } else {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(progressPhotos.prefix(5)) { photo in
-                        ProgressPhotoCard(photo: photo)
+            Text("Body is locked")
+                .font(SteadyType.display(28))
+                .foregroundColor(.atlasText)
+            Text("Unlock to see weight, body fat and photos.")
+                .font(SteadyType.body)
+                .foregroundColor(.atlasTextMuted)
+            Spacer()
+            Button(action: authenticate) {
+                Label("Unlock with Face ID", systemImage: "faceid")
+            }
+            .buttonStyle(SteadyPrimaryButtonStyle())
+            .padding(.horizontal, 32)
+            .padding(.bottom, 48)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func authenticate() {
+        let context = LAContext()
+        var error: NSError?
+        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else { return }
+        context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Unlock your body composition") { success, _ in
+            DispatchQueue.main.async {
+                if success { isUnlocked = true }
+            }
+        }
+    }
+
+    // MARK: - Content
+
+    private var content: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                header
+                headlinePanel
+                chartPanel
+                goalPanel
+                metabolicAgePanel
+                recentPanel
+                photosPanel
+                Spacer(minLength: 24)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 4)
+        }
+        .refreshable { await importFromHealth() }
+        .task { await importFromHealth() }
+        .sheet(isPresented: $showingLog) { AddWeightView() }
+        .sheet(isPresented: $showingGoal) { BodyGoalView() }
+        .sheet(isPresented: $showingSettings) { BodyCompSettingsView() }
+        .sheet(isPresented: $showingPhotoComparison) { PhotoComparisonView() }
+        .confirmationDialog("Add Photo", isPresented: $showingImageSourcePicker) {
+            Button("Take Photo") { showingCamera = true }
+            Button("Choose from Library") { showingPhotoLibrary = true }
+            Button("Cancel", role: .cancel) { }
+        }
+        .photosPicker(isPresented: $showingPhotoLibrary, selection: $selectedPhotoItem, matching: .images)
+        .fullScreenCover(isPresented: $showingCamera) {
+            CameraView(image: $capturedImage)
+        }
+        .onChange(of: selectedPhotoItem) { _, item in
+            if let item { loadPhoto(item) }
+        }
+        .onChange(of: capturedImage) { _, image in
+            if let image {
+                savePhoto(image)
+                capturedImage = nil
+            }
+        }
+    }
+
+    // MARK: - Header
+
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Body")
+                    .font(SteadyType.display(30))
+                    .foregroundColor(.atlasText)
+                Text(lastReadingText).steadyLabel()
+            }
+            Spacer()
+            Button { showingSettings = true } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 17))
+                    .foregroundColor(.atlasTextMuted)
+                    .frame(width: 36, height: 36)
+            }
+            Button { showingLog = true } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.atlasBackground)
+                    .frame(width: 36, height: 36)
+                    .background(Color.atlasPrimary)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+            .accessibilityLabel("Log weight")
+        }
+        .padding(.top, 12)
+        .padding(.bottom, 4)
+    }
+
+    private var lastReadingText: String {
+        guard let latest = entries.first else { return "No readings yet" }
+        return "Last reading " + BodyFormat.relativeDay(latest.date)
+    }
+
+    // MARK: - Headline
+
+    private var headlinePanel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if state.latestWeight == nil {
+                Text("Log your weight to start tracking. Add body fat to unlock lean mass and your goal weight.")
+                    .font(SteadyType.body)
+                    .foregroundColor(.atlasTextMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Log weight") { showingLog = true }
+                    .buttonStyle(SteadyPrimaryButtonStyle())
+            } else {
+                HStack(alignment: .top, spacing: 0) {
+                    metricColumn(
+                        label: "Weight",
+                        value: (state.trendWeight ?? state.latestWeight).map { BodyFormat.number(unitFormatter.fromLbs($0)) } ?? "—",
+                        unit: unitFormatter.weightUnit,
+                        footnote: rateText
+                    )
+                    divider
+                    metricColumn(
+                        label: "Body fat",
+                        value: state.latestBodyFat.map { BodyFormat.number($0 * 100) } ?? "—",
+                        unit: state.latestBodyFat == nil ? "" : "%",
+                        footnote: state.latestBodyFatDate.map { BodyFormat.relativeDay($0) } ?? (state.latestBodyFat == nil ? "not logged" : nil)
+                    )
+                    divider
+                    metricColumn(
+                        label: "Lean mass",
+                        value: state.leanMass.map { BodyFormat.number(unitFormatter.fromLbs($0)) } ?? "—",
+                        unit: state.leanMass == nil ? "" : unitFormatter.weightUnit,
+                        footnote: state.fatMass.map { "fat " + BodyFormat.number(unitFormatter.fromLbs($0)) } ?? "needs body fat"
+                    )
+                }
+                Text("Weight is your 7-day trend, so one heavy morning doesn't move it much.")
+                    .font(SteadyType.caption)
+                    .foregroundColor(.steadyTextFaint)
+            }
+        }
+        .steadyPanel()
+    }
+
+    private var rateText: String? {
+        guard let rate = state.weeklyWeightRate else { return state.weightPoints.count > 1 ? "trend building" : nil }
+        let value = unitFormatter.fromLbs(abs(rate))
+        if value < 0.05 { return "holding steady" }
+        return String(format: "%@%.1f %@/wk", rate > 0 ? "+" : "−", value, unitFormatter.weightUnit)
+    }
+
+    // MARK: - Chart
+
+    private var chartPanel: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                SteadySegmented(options: BodyMetric.allCases, selection: $chartMetric) { $0.title }
+            }
+            BodyTrendChart(metric: chartMetric, points: chartPoints, range: chartRange, goalValue: chartGoal)
+            SteadySegmented(options: BodyChartRange.allCases, selection: $chartRange) { $0.title }
+        }
+        .steadyPanel()
+    }
+
+    // MARK: - Goal
+
+    @ViewBuilder
+    private var goalPanel: some View {
+        Button { showingGoal = true } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("Body fat goal").steadyLabel()
+                    Spacer()
+                    Text(goal == nil ? "Set" : "Edit")
+                        .font(SteadyType.caption)
+                        .foregroundColor(.atlasPrimary)
+                }
+                if let goal {
+                    HStack(alignment: .top, spacing: 0) {
+                        metricColumn(label: "Target", value: BodyFormat.number(goal.targetBodyFat * 100), unit: "%", footnote: nil)
+                        divider
+                        metricColumn(label: "Goal weight", value: BodyFormat.number(unitFormatter.fromLbs(goal.goalWeight)), unit: unitFormatter.weightUnit, footnote: nil)
+                    }
+                    if let current = state.latestBodyFat {
+                        GoalProgressBar(start: max(firstBodyFat ?? current, current),
+                                        current: current, target: goal.targetBodyFat)
+                    }
+                    Text(BodyGoalText.summary(goal, unitFormatter: unitFormatter))
+                        .font(SteadyType.caption)
+                        .foregroundColor(.atlasTextMuted)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    Text(state.latestBodyFat == nil
+                         ? "Log a body fat reading, then pick a target. Steady works out the weight that gets you there."
+                         : "Pick a target body fat %. Steady works out the weight that gets you there while keeping your lean mass.")
+                        .font(SteadyType.body)
+                        .foregroundColor(.atlasTextMuted)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .steadyPanel()
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Metabolic Age
+
+    @ViewBuilder
+    private var metabolicAgePanel: some View {
+        if let estimate = metabolicAge {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Metabolic age · estimate").steadyLabel()
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("\(estimate.years)")
+                        .font(SteadyType.display(40))
+                        .foregroundColor(estimate.years <= estimate.actualAge ? .atlasPrimary : .atlasAmber)
+                    Text(metabolicAgeCaption(estimate))
+                        .font(SteadyType.body)
+                        .foregroundColor(.atlasTextMuted)
+                }
+                Text("Your resting burn from lean mass is about \(estimate.bmr) kcal a day. The average for your age, height and weight is \(estimate.averageBMR). More lean mass lowers this number.")
+                    .font(SteadyType.caption)
+                    .foregroundColor(.atlasTextMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .steadyPanel()
+        }
+    }
+
+    private func metabolicAgeCaption(_ estimate: MetabolicAge) -> String {
+        let diff = estimate.actualAge - estimate.years
+        if diff == 0 { return "same as your age" }
+        return diff > 0 ? "\(diff) yr younger than you" : "\(-diff) yr older than you"
+    }
+
+    // MARK: - Recent Entries
+
+    private var recentPanel: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Recent").steadyLabel()
+                Spacer()
+                if !entries.isEmpty {
+                    NavigationLink {
+                        WeightHistoryView()
+                    } label: {
+                        Text("All \(entries.count)")
+                            .font(SteadyType.caption)
+                            .foregroundColor(.atlasPrimary)
+                    }
+                }
+            }
+            if entries.isEmpty {
+                Text("Nothing logged yet. Readings from Apple Health show up here automatically.")
+                    .font(SteadyType.caption)
+                    .foregroundColor(.atlasTextMuted)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(entries.prefix(5).enumerated()), id: \.element.id) { index, entry in
+                        if index > 0 { Rectangle().fill(Color.steadyHairline).frame(height: 1) }
+                        WeightEntryRow(entry: entry)
                     }
                 }
             }
         }
+        .steadyPanel()
     }
-}
-    
- 
-    // MARK: - Load Photo
+
+    // MARK: - Photos
+
+    private var photosPanel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Progress photos").steadyLabel()
+                Spacer()
+                if progressPhotos.count >= 2 {
+                    Button("Compare") { showingPhotoComparison = true }
+                        .font(SteadyType.caption)
+                        .foregroundColor(.atlasPrimary)
+                        .padding(.trailing, 12)
+                }
+                Button("Add") { showingImageSourcePicker = true }
+                    .font(SteadyType.caption)
+                    .foregroundColor(.atlasPrimary)
+            }
+            if progressPhotos.isEmpty {
+                Text("Photos catch changes the scale misses. They stay on your device and iCloud.")
+                    .font(SteadyType.caption)
+                    .foregroundColor(.atlasTextMuted)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(progressPhotos.prefix(8)) { photo in
+                            ProgressPhotoCard(photo: photo)
+                        }
+                    }
+                }
+            }
+        }
+        .steadyPanel()
+    }
+
+    // MARK: - Pieces
+
+    private var divider: some View {
+        Rectangle()
+            .fill(Color.steadyHairline)
+            .frame(width: 1)
+            .padding(.horizontal, 12)
+    }
+
+    private func metricColumn(label: String, value: String, unit: String, footnote: String?) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label).steadyLabel(.steadyTextFaint)
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(value)
+                    .font(SteadyType.metric(22))
+                    .foregroundColor(value == "—" ? .steadyTextFaint : .atlasText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Text(unit)
+                    .font(SteadyType.caption)
+                    .foregroundColor(.atlasTextMuted)
+            }
+            if let footnote {
+                Text(footnote)
+                    .font(SteadyType.caption)
+                    .foregroundColor(.atlasTextMuted)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Actions
+
+    private func importFromHealth() async {
+        await HealthKitManager.shared.requestAuthorizationIfNeeded()
+        await HealthKitManager.shared.importBodyComposition(modelContext: modelContext)
+        WidgetSync.refresh(modelContext: modelContext, unitFormatter: unitFormatter)
+    }
+
     private func loadPhoto(_ item: PhotosPickerItem) {
         Task {
             if let data = try? await item.loadTransferable(type: Data.self) {
-                await MainActor.run {
-                    let photo = ProgressPhoto(date: Date(), photoData: data)
-                    photo.weight = currentWeight
-                    photo.userProfile = userProfile
-                    
-                    modelContext.insert(photo)
-                    try? modelContext.save()
-                    
-                    print("✅ Progress photo saved")
-                    selectedPhotoItem = nil
-                }
+                insertPhoto(data)
+                selectedPhotoItem = nil
             }
         }
     }
-    
-    // MARK: - Save Photo (from camera)
+
     private func savePhoto(_ image: UIImage) {
         guard let data = image.jpegData(compressionQuality: 0.8) else { return }
-        
+        insertPhoto(data)
+    }
+
+    private func insertPhoto(_ data: Data) {
         let photo = ProgressPhoto(date: Date(), photoData: data)
-        photo.weight = currentWeight
-        photo.userProfile = userProfile
-        
+        photo.weight = state.latestWeight
+        photo.userProfile = profile
         modelContext.insert(photo)
         try? modelContext.save()
-        
-        print("✅ Camera photo saved")
     }
 }
 
-// MARK: - Add Weight View
+// MARK: - Goal Progress Bar
+
+/// Flat bar from the starting body fat to the target. Fills as body fat drops.
+struct GoalProgressBar: View {
+    let start: Double
+    let current: Double
+    let target: Double
+
+    private var fraction: Double {
+        let span = start - target
+        guard abs(span) > 0.0001 else { return current <= target ? 1 : 0 }
+        return min(max((start - current) / span, 0), 1)
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Rectangle().fill(Color.steadyRaised)
+                Rectangle().fill(Color.atlasPrimary).frame(width: geo.size.width * fraction)
+            }
+        }
+        .frame(height: 6)
+        .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
+    }
+}
+
+// MARK: - Segmented Control
+
+struct SteadySegmented<Option: Hashable>: View {
+    let options: [Option]
+    @Binding var selection: Option
+    let title: (Option) -> String
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(options, id: \.self) { option in
+                Button { selection = option } label: {
+                    Text(title(option))
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(selection == option ? .atlasText : .atlasTextMuted)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 7)
+                        .background(selection == option ? Color.steadyRaised : Color.clear)
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(2)
+        .background(Color.atlasBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.steadyHairline, lineWidth: 1))
+    }
+}
+
+// MARK: - Formatting
+
+enum BodyFormat {
+    static func number(_ value: Double) -> String {
+        String(format: "%.1f", value)
+    }
+
+    /// "today", "yesterday", "3d ago", or "Mar 4"
+    static func relativeDay(_ date: Date) -> String {
+        let calendar = Calendar.current
+        let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: Date())).day ?? 0
+        switch days {
+        case ..<1: return "today"
+        case 1: return "yesterday"
+        case 2...6: return "\(days)d ago"
+        default: return date.formatted(.dateTime.month(.abbreviated).day())
+        }
+    }
+}
+
+// MARK: - Log / Edit Entry
+
+/// Logs a new weigh-in, or edits one when `entry` is passed.
 struct AddWeightView: View {
+    var entry: BodyCompEntry? = nil
+
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(\.unitFormatter) private var unitFormatter
     @Query private var profiles: [UserProfile]
-    
-    @State private var weight: String = ""
-    @State private var notes: String = ""
-    
-    private var userProfile: UserProfile? {
-        profiles.first
+    @Query(sort: \BodyCompEntry.date, order: .reverse) private var entries: [BodyCompEntry]
+
+    @State private var weightText = ""
+    @State private var bodyFatText = ""
+    @State private var date = Date()
+    @State private var notes = ""
+    @FocusState private var focusedField: Field?
+
+    private enum Field { case weight, bodyFat, notes }
+
+    private var weightValue: Double? { Double(weightText.replacingOccurrences(of: ",", with: ".")) }
+    private var bodyFatValue: Double? { Double(bodyFatText.replacingOccurrences(of: ",", with: ".")) }
+
+    private var isValid: Bool {
+        guard let w = weightValue, w > 0 else { return false }
+        if !bodyFatText.isEmpty {
+            guard let bf = bodyFatValue, bf > 2, bf < 60 else { return false }
+        }
+        return true
     }
-    
+
     var body: some View {
-        ZStack {
-            Color.atlasBackground
-                .ignoresSafeArea()
-            
-            VStack(spacing: 24) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Current Weight")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.atlasText)
-                    
-                    HStack {
-                        TextField("e.g., 185", text: $weight)
-                            .keyboardType(.decimalPad)
-                            .font(.system(size: 32, weight: .light))
-                            .foregroundColor(.atlasText)
-                        
-                        Text(unitFormatter.weightUnit)
-                            .font(.system(size: 20))
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    field(label: "Weight", text: $weightText, unit: unitFormatter.weightUnit, placeholder: "0.0", focus: .weight)
+                    field(label: "Body fat (optional)", text: $bodyFatText, unit: "%", placeholder: "e.g. 18.5", focus: .bodyFat)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Date").steadyLabel()
+                        DatePicker("", selection: $date, in: ...Date(), displayedComponents: [.date, .hourAndMinute])
+                            .labelsHidden()
+                            .tint(.atlasPrimary)
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Notes").steadyLabel()
+                        TextField("Optional", text: $notes, axis: .vertical)
+                            .lineLimit(1...4)
+                            .focused($focusedField, equals: .notes)
+                            .textFieldStyle(atlasTextFieldStyle())
+                    }
+
+                    if entry?.isFromHealth == true {
+                        Text("Imported from Apple Health. Edits stay in Steady and won't change Health.")
+                            .font(SteadyType.caption)
                             .foregroundColor(.atlasTextMuted)
                     }
-                    .padding()
-                    .background(Color.white.opacity(0.1))
-                    .cornerRadius(12)
+
+                    Button(entry == nil ? "Save" : "Save changes", action: save)
+                        .buttonStyle(SteadyPrimaryButtonStyle(tint: isValid ? .atlasPrimary : .steadyRaised))
+                        .disabled(!isValid)
+                        .padding(.top, 6)
                 }
-                
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Notes (optional)")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.atlasText)
-                    
-                    TextEditor(text: $notes)
-                        .frame(height: 100)
-                        .padding(12)
-                        .background(Color.white.opacity(0.1))
-                        .cornerRadius(12)
-                        .foregroundColor(.atlasText)
-                        .font(.system(size: 15))
-                }
-                
-                Spacer()
-                
-                Button(action: saveWeight) {
-                    Text("Save Weight")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.atlasBackground)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(weight.isEmpty ? Color.gray : Color.atlasPrimary)
-                        .cornerRadius(12)
-                }
-                .disabled(weight.isEmpty)
+                .padding(16)
             }
-            .padding(24)
+            .background(Color.atlasBackground.ignoresSafeArea())
+            .navigationTitle(entry == nil ? "Log Weight" : "Edit Entry")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { dismiss() }
+                        .foregroundColor(.atlasTextMuted)
+                }
+            }
         }
-        .navigationTitle("Log Weight")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button("Cancel") {
-                    dismiss()
-                }
-                .foregroundColor(.atlasAccent)
+        .onAppear(perform: load)
+    }
+
+    private func field(label: String, text: Binding<String>, unit: String, placeholder: String, focus: Field) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label).steadyLabel()
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                TextField(placeholder, text: text)
+                    .keyboardType(.decimalPad)
+                    .focused($focusedField, equals: focus)
+                    .font(SteadyType.metric(34))
+                    .foregroundColor(.atlasText)
+                Text(unit)
+                    .font(SteadyType.title)
+                    .foregroundColor(.atlasTextMuted)
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(Color.steadyRaised)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.steadyHairline, lineWidth: 1))
         }
     }
-    
-    private func saveWeight() {
-        guard let displayValue = Double(weight) else { return }
-        // Input is in user's preferred unit; store as lbs internally
-        let weightInLbs = unitFormatter.toLbs(displayValue)
-        
-        let entry = BodyCompEntry(date: Date(), weight: weightInLbs)
-        entry.notes = notes.isEmpty ? nil : notes
-        entry.userProfile = userProfile
-        
-        modelContext.insert(entry)
-        
+
+    private func load() {
+        if let entry {
+            weightText = String(format: "%.1f", unitFormatter.fromLbs(entry.weight))
+            bodyFatText = entry.bodyFat.map { String(format: "%.1f", $0 * 100) } ?? ""
+            date = entry.date
+            notes = entry.notes ?? ""
+        } else {
+            // Prefill with the last reading so a small change is a couple of taps
+            if let last = entries.first {
+                weightText = String(format: "%.1f", unitFormatter.fromLbs(last.weight))
+            }
+            focusedField = .weight
+        }
+    }
+
+    private func save() {
+        guard let displayWeight = weightValue else { return }
+        let lbs = unitFormatter.toLbs(displayWeight)
+        let bodyFat = bodyFatValue.map { $0 / 100 }
+        let trimmedNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let target: BodyCompEntry
+        if let entry {
+            target = entry
+        } else {
+            target = BodyCompEntry(date: date, weight: lbs)
+            target.source = "manual"
+            target.userProfile = profiles.first
+            modelContext.insert(target)
+        }
+        target.weight = lbs
+        target.date = date
+        target.bodyFat = bodyFatText.isEmpty ? nil : bodyFat
+        target.notes = trimmedNotes.isEmpty ? nil : trimmedNotes
+
         do {
             try modelContext.save()
-            print("✅ Weight logged: \(weightInLbs) lbs")
+            BodyProfileSync.apply(modelContext: modelContext)
+            WidgetSync.refresh(modelContext: modelContext, unitFormatter: unitFormatter)
             dismiss()
         } catch {
-            print("❌ Failed to save weight: \(error)")
+            print("❌ Failed to save body comp entry: \(error)")
         }
     }
 }
 
-// MARK: - Supporting Views
+// MARK: - Entry Row
+
+struct WeightEntryRow: View {
+    @Environment(\.unitFormatter) private var unitFormatter
+    let entry: BodyCompEntry
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+                    .font(SteadyType.body)
+                    .foregroundColor(.atlasText)
+                if let notes = entry.notes, !notes.isEmpty {
+                    Text(notes)
+                        .font(SteadyType.caption)
+                        .foregroundColor(.atlasTextMuted)
+                        .lineLimit(1)
+                } else if entry.isFromHealth {
+                    Text("Apple Health")
+                        .font(SteadyType.caption)
+                        .foregroundColor(.steadyTextFaint)
+                }
+            }
+            Spacer()
+            if let bf = entry.bodyFat {
+                Text(String(format: "%.1f%%", bf * 100))
+                    .font(SteadyType.metric(14, weight: .regular))
+                    .foregroundColor(.atlasTextMuted)
+            }
+            Text(unitFormatter.displayWeight(entry.weight))
+                .font(SteadyType.metric(16))
+                .foregroundColor(.atlasText)
+                .frame(minWidth: 84, alignment: .trailing)
+        }
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
+    }
+}
+
+// MARK: - Progress Photo Card
 
 struct ProgressPhotoCard: View {
     let photo: ProgressPhoto
     @State private var showingDetail = false
     @Environment(\.unitFormatter) private var unitFormatter
-    
+
     var body: some View {
-        Button(action: { showingDetail = true }) {
-            VStack(spacing: 8) {
+        Button { showingDetail = true } label: {
+            VStack(alignment: .leading, spacing: 6) {
                 if let uiImage = UIImage(data: photo.photoData) {
                     Image(uiImage: uiImage)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: 120, height: 160)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .frame(width: 108, height: 144)
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                 }
-                
-                VStack(spacing: 2) {
-                    Text(photo.date.formatted(date: .abbreviated, time: .omitted))
-                        .font(.system(size: 12))
-                        .foregroundColor(.atlasText)
-                    
-                    if let weight = photo.weight {
-                        Text(unitFormatter.displayWeight(weight))
-                            .font(.system(size: 11))
-                            .foregroundColor(.atlasTextMuted)
-                    }
-                }
-            }
-        }
-        .buttonStyle(PlainButtonStyle())
-        .fullScreenCover(isPresented: $showingDetail) {
-            NavigationView {
-                ProgressPhotoDetailView(photo: photo)
-            }
-        }
-    }
-}
-
-struct WeightEntryRow: View {
-    @Environment(\.unitFormatter) private var unitFormatter
-    let entry: BodyCompEntry
-    
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(entry.date.formatted(date: .abbreviated, time: .omitted))
-                    .font(.system(size: 14))
+                Text(photo.date.formatted(.dateTime.month(.abbreviated).day()))
+                    .font(SteadyType.caption)
                     .foregroundColor(.atlasText)
-                
-                if let notes = entry.notes {
-                    Text(notes)
-                        .font(.system(size: 12))
+                if let weight = photo.weight {
+                    Text(unitFormatter.displayWeight(weight))
+                        .font(SteadyType.metric(11, weight: .regular))
                         .foregroundColor(.atlasTextMuted)
                 }
             }
-            
-            Spacer()
-            
-            Text(unitFormatter.displayWeight(entry.weight))
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.atlasText)
         }
-        .padding(12)
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(8)
+        .buttonStyle(.plain)
+        .fullScreenCover(isPresented: $showingDetail) {
+            NavigationStack {
+                ProgressPhotoDetailView(photo: photo)
+            }
+        }
     }
 }
 
