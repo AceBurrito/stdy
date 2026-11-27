@@ -225,15 +225,6 @@ struct ExerciseProgressDetailView: View {
                     .foregroundColor(.atlasAccent)
                     .tracking(2)
                 
-                if isCompoundLift {
-                    Text("• PACE")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.atlasPrimary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.atlasPrimary.opacity(0.15))
-                        .cornerRadius(4)
-                }
             }
             
             HStack(alignment: .bottom, spacing: 16) {
@@ -283,11 +274,6 @@ struct ExerciseProgressDetailView: View {
                     .font(.system(size: 12))
                     .foregroundColor(.atlasTextMuted)
                 
-                if isCompoundLift {
-                    Text("• Used in your Pace score")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.atlasPrimary)
-                }
             }
         }
     }

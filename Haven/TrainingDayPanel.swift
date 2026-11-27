@@ -1,46 +1,50 @@
 // MARK: - TrainingDayPanel
-// Rich training preview for today's workout. Lives in a swipeable TabView alongside habits.
-// Shows exercise list with last-session data for strength days, zone targets for cardio days,
-// and recovery messaging for rest days. Includes a direct action button to start logging.
+// Today's training on the Today tab. Exercise list with targets for strength days,
+// zone targets for cardio days, recovery guidance for rest days.
+// Completion comes from logged sessions (no habit system), and the panel
+// carries a one-line adjustment when recovery is amber or coral.
 
 import SwiftUI
 import SwiftData
 
 struct TrainingDayPanel: View {
     let todaysWorkout: PlannedWorkoutDay?
-    let trainingHabit: Habit?
     let isCompleted: Bool
-    
+    /// Today's recovery state, used for the adjustment line. Nil when unknown.
+    var recoveryState: RecoveryState? = nil
+
     // Last session context
     let lastSessionVolume: Double?
     let lastSessionDate: Date?
     let lastCardioSession: CardioSession?
-    
+
     // Actions
     let onStartWorkout: () -> Void
     let onStartCardio: () -> Void
-    let onMarkRestComplete: () -> Void
-    
-    @Environment(\.modelContext) private var modelContext
-    
+
+    @Environment(\.unitFormatter) private var unitFormatter
+
     private var dayType: String {
-        todaysWorkout?.dayType ?? trainingHabit?.trainingDayType ?? "rest"
+        todaysWorkout?.dayType ?? "rest"
     }
-    
+
     private var dayName: String {
-        todaysWorkout?.dayName ?? trainingHabit?.title ?? "Rest Day"
+        guard let workout = todaysWorkout, workout.dayType != "rest" else { return "Rest Day" }
+        return workout.dayName
     }
-    
+
     private var exercises: [PlannedExercise] {
         todaysWorkout?.exercises.sorted { $0.orderIndex < $1.orderIndex } ?? []
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header
             header
-            
-            // Content varies by day type
+
+            if !isCompleted, dayType != "rest", let adjustment = recoveryState?.trainingAdjustment {
+                adjustmentLine(adjustment)
+            }
+
             switch dayType {
             case "strength":
                 strengthContent
@@ -49,382 +53,245 @@ struct TrainingDayPanel: View {
             default:
                 restContent
             }
-            
-            // Action button
-            if !isCompleted {
-                actionButton
-            } else {
-                completedBanner
+
+            if dayType != "rest" {
+                if isCompleted {
+                    completedBanner
+                } else {
+                    actionButton
+                }
             }
         }
         .background(Color.atlasCardDark)
-        .cornerRadius(16)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(
-                    isCompleted
-                        ? Color.atlasPrimary.opacity(0.2)
-                        : Color.atlasPrimary.opacity(0.12),
-                    lineWidth: 1
-                )
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Color.steadyHairline, lineWidth: 1)
         )
     }
-    
+
     // MARK: - Header
-    
+
     private var header: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(Color.atlasPrimary.opacity(0.15))
-                    .frame(width: 40, height: 40)
-                
-                Image(systemName: iconForDayType)
-                    .font(.system(size: 17))
-                    .foregroundColor(.atlasPrimary)
-            }
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text("TODAY'S TRAINING")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(.atlasTextMuted)
-                    .tracking(1.5)
-                
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Today's training").steadyLabel()
                 Text(dayName)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(SteadyType.title)
                     .foregroundColor(.atlasText)
             }
-            
+
             Spacer()
-            
+
             if isCompleted {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 24))
-                    .foregroundColor(.atlasPrimary)
+                Text("Done").steadyLabel(.atlasPrimary)
+            } else if dayType == "strength", !exercises.isEmpty {
+                Text("\(exercises.count) exercises")
+                    .font(SteadyType.caption)
+                    .foregroundColor(.atlasTextMuted)
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 18)
-        .padding(.bottom, 14)
+        .padding(.horizontal, 18)
+        .padding(.top, 16)
+        .padding(.bottom, 12)
     }
-    
+
+    private func adjustmentLine(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Rectangle()
+                .fill(recoveryState?.color ?? .atlasAmber)
+                .frame(width: 2)
+            Text(text)
+                .font(SteadyType.caption)
+                .foregroundColor(.atlasText)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 18)
+        .padding(.bottom, 12)
+    }
+
+    private var divider: some View {
+        Rectangle()
+            .fill(Color.steadyHairline)
+            .frame(height: 1)
+    }
+
     // MARK: - Strength Day Content
-    
+
     private var strengthContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Divider
-            Rectangle()
-                .fill(Color.white.opacity(0.06))
-                .frame(height: 1)
-                .padding(.horizontal, 16)
-            
-            // Exercise list
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(Array(exercises.prefix(5).enumerated()), id: \.element.id) { index, exercise in
-                    HStack(spacing: 0) {
+            divider
+
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(exercises.prefix(6).enumerated()), id: \.element.id) { index, exercise in
+                    HStack(spacing: 12) {
+                        Text(String(format: "%02d", index + 1))
+                            .font(SteadyType.metric(12, weight: .medium))
+                            .foregroundColor(.steadyTextFaint)
+
                         Text(exercise.name)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.atlasText.opacity(0.85))
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(.atlasText)
                             .lineLimit(1)
-                        
+
                         Spacer(minLength: 8)
-                        
-                        // Target sets × reps
+
                         if let reps = exercise.targetReps {
                             Text("\(exercise.targetSets) × \(reps)")
-                                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                .font(SteadyType.metric(14, weight: .medium))
                                 .foregroundColor(.atlasTextMuted)
                         }
                     }
-                }
-                
-                if exercises.count > 5 {
-                    Text("+ \(exercises.count - 5) more")
-                        .font(.system(size: 13))
-                        .foregroundColor(.atlasTextMuted.opacity(0.6))
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 14)
-            
-            // Last session context
-            if let volume = lastSessionVolume, volume > 0 {
-                Rectangle()
-                    .fill(Color.white.opacity(0.04))
-                    .frame(height: 1)
-                    .padding(.horizontal, 16)
-                
-                HStack(spacing: 6) {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 11))
-                        .foregroundColor(.atlasTextMuted.opacity(0.5))
-                    
-                    Text("Last session: \(formatVolume(volume)) total volume")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.atlasTextMuted.opacity(0.6))
-                    
-                    if let date = lastSessionDate {
-                        Text("· \(relativeDate(date))")
-                            .font(.system(size: 12))
-                            .foregroundColor(.atlasTextMuted.opacity(0.4))
+                    .padding(.vertical, 9)
+
+                    if index < min(exercises.count, 6) - 1 {
+                        divider.opacity(0.6)
                     }
                 }
-                .padding(.horizontal, 20)
+
+                if exercises.count > 6 {
+                    Text("+ \(exercises.count - 6) more")
+                        .font(SteadyType.caption)
+                        .foregroundColor(.atlasTextMuted)
+                        .padding(.vertical, 8)
+                }
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 4)
+
+            if let volume = lastSessionVolume, volume > 0 {
+                divider
+                HStack(spacing: 6) {
+                    Text("Last session").steadyLabel(.steadyTextFaint)
+                    Text(unitFormatter.displayVolume(volume))
+                        .font(SteadyType.metric(13, weight: .medium))
+                        .foregroundColor(.atlasTextMuted)
+                    if let date = lastSessionDate {
+                        Text("· \(relativeDate(date))")
+                            .font(SteadyType.caption)
+                            .foregroundColor(.steadyTextFaint)
+                    }
+                }
+                .padding(.horizontal, 18)
                 .padding(.vertical, 10)
             }
         }
     }
-    
+
     // MARK: - Cardio Day Content
-    
+
     private var cardioContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Rectangle()
-                .fill(Color.white.opacity(0.06))
-                .frame(height: 1)
-                .padding(.horizontal, 16)
-            
+            divider
+
             VStack(alignment: .leading, spacing: 12) {
-                // Zone target
                 if let workout = todaysWorkout {
-                    if let hrMin = workout.targetHRMin, let hrMax = workout.targetHRMax {
-                        HStack(spacing: 12) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("TARGET HR")
-                                    .font(.system(size: 10, weight: .semibold))
-                                    .foregroundColor(.atlasTextMuted)
-                                    .tracking(1)
-                                
-                                Text("\(hrMin)–\(hrMax) bpm")
-                                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                                    .foregroundColor(.atlasPrimary)
-                            }
-                            
-                            Spacer()
-                            
-                            if let duration = workout.cardioDuration {
-                                VStack(alignment: .trailing, spacing: 2) {
-                                    Text("DURATION")
-                                        .font(.system(size: 10, weight: .semibold))
-                                        .foregroundColor(.atlasTextMuted)
-                                        .tracking(1)
-                                    
-                                    Text("\(duration) min")
-                                        .font(.system(size: 20, weight: .bold, design: .rounded))
-                                        .foregroundColor(.atlasText)
-                                }
-                            }
+                    HStack(alignment: .top, spacing: 24) {
+                        if let hrMin = workout.targetHRMin, let hrMax = workout.targetHRMax {
+                            stat(label: "Target HR", value: "\(hrMin)–\(hrMax)", unit: "bpm")
+                        }
+                        if let duration = workout.cardioDuration {
+                            stat(label: "Duration", value: "\(duration)", unit: "min")
                         }
                     }
-                    
-                    // Cardio protocol or notes
+
                     if let proto = workout.cardioProtocol, !proto.isEmpty {
                         Text(proto)
-                            .font(.system(size: 13))
+                            .font(SteadyType.caption)
                             .foregroundColor(.atlasTextMuted)
-                            .lineSpacing(2)
                     }
-                    
+
                     if let notes = workout.cardioNotes, !notes.isEmpty {
                         Text(notes)
-                            .font(.system(size: 13))
-                            .foregroundColor(.atlasTextMuted.opacity(0.7))
+                            .font(SteadyType.caption)
+                            .foregroundColor(.atlasTextMuted)
                             .lineLimit(2)
                     }
                 }
-                
-                // Last cardio session
+
                 if let lastCardio = lastCardioSession {
-                    Rectangle()
-                        .fill(Color.white.opacity(0.04))
-                        .frame(height: 1)
-                    
-                    HStack(spacing: 6) {
-                        Image(systemName: "clock.arrow.circlepath")
-                            .font(.system(size: 11))
-                            .foregroundColor(.atlasTextMuted.opacity(0.5))
-                        
-                        var parts: [String] {
-                            var p: [String] = []
-                            p.append("\(lastCardio.duration) min")
-                            if let hr = lastCardio.avgHeartRate {
-                                p.append("\(Int(hr)) bpm avg")
-                            }
-                            if let dist = lastCardio.distance, dist > 0 {
-                                p.append(String(format: "%.1f mi", dist))
-                            }
-                            return p
-                        }
-                        
-                        Text("Last: " + parts.joined(separator: " · "))
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.atlasTextMuted.opacity(0.6))
-                    }
+                    Text("Last: " + cardioSummary(lastCardio))
+                        .font(SteadyType.caption)
+                        .foregroundColor(.steadyTextFaint)
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 18)
             .padding(.vertical, 14)
         }
     }
-    
+
+    private func stat(label: String, value: String, unit: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).steadyLabel(.steadyTextFaint)
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(value)
+                    .font(SteadyType.metric(24))
+                    .foregroundColor(.atlasText)
+                Text(unit)
+                    .font(SteadyType.caption)
+                    .foregroundColor(.atlasTextMuted)
+            }
+        }
+    }
+
+    private func cardioSummary(_ session: CardioSession) -> String {
+        var parts: [String] = ["\(session.duration) min"]
+        if let hr = session.avgHeartRate { parts.append("\(Int(hr)) bpm avg") }
+        if let dist = session.distance, dist > 0 { parts.append(unitFormatter.displayDistance(dist)) }
+        return parts.joined(separator: " · ")
+    }
+
     // MARK: - Rest Day Content
-    
+
     private var restContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Rectangle()
-                .fill(Color.white.opacity(0.06))
-                .frame(height: 1)
-                .padding(.horizontal, 16)
-            
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Recovery is when you actually get stronger. Trust the process.")
-                    .font(.system(size: 14))
-                    .foregroundColor(.atlasTextMuted)
-                    .lineSpacing(3)
-                
-                HStack(spacing: 16) {
-                    restSuggestion(icon: "figure.walk", text: "Light walk")
-                    restSuggestion(icon: "figure.flexibility", text: "Stretch")
-                    restSuggestion(icon: "bed.double.fill", text: "Sleep early")
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 14)
+            divider
+            Text(todaysWorkout == nil
+                 ? "Nothing scheduled. Adaptation happens on days like this: walk, stretch, sleep."
+                 : "Adaptation happens on days like this. Walk, stretch, sleep.")
+                .font(SteadyType.body)
+                .foregroundColor(.atlasTextMuted)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 14)
         }
     }
-    
-    private func restSuggestion(icon: String, text: String) -> some View {
-        HStack(spacing: 5) {
-            Image(systemName: icon)
-                .font(.system(size: 11))
-                .foregroundColor(.atlasPrimary.opacity(0.5))
-            Text(text)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.atlasTextMuted.opacity(0.6))
-        }
-    }
-    
+
     // MARK: - Action Button
-    
+
     private var actionButton: some View {
         Button(action: {
-            switch dayType {
-            case "strength": onStartWorkout()
-            case "cardio": onStartCardio()
-            default: onMarkRestComplete()
-            }
+            if dayType == "cardio" { onStartCardio() } else { onStartWorkout() }
         }) {
-            HStack(spacing: 8) {
-                Image(systemName: dayType == "rest" ? "checkmark" : "play.fill")
-                    .font(.system(size: 14, weight: .semibold))
-                
-                Text(actionLabel)
-                    .font(.system(size: 15, weight: .semibold))
-            }
-            .foregroundColor(.atlasBackground)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(Color.atlasPrimary)
-            .cornerRadius(12)
+            Text(dayType == "cardio" ? "Log Cardio" : "Start Workout")
         }
-        .buttonStyle(PlainButtonStyle())
-        .padding(.horizontal, 20)
+        .buttonStyle(SteadyPrimaryButtonStyle())
+        .padding(.horizontal, 18)
         .padding(.top, 4)
-        .padding(.bottom, 18)
+        .padding(.bottom, 16)
     }
-    
+
     private var completedBanner: some View {
         HStack(spacing: 8) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 16))
-                .foregroundColor(.atlasPrimary)
-            
-            Text(dayType == "rest" ? "Rest day logged" : "Workout complete")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.atlasPrimary)
+            Image(systemName: "checkmark")
+                .font(.system(size: 13, weight: .bold))
+            Text(dayType == "cardio" ? "Cardio logged" : "Workout logged")
+                .font(SteadyType.bodyEmphasis)
         }
+        .foregroundColor(.atlasPrimary)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
-        .padding(.horizontal, 20)
-        .padding(.bottom, 14)
+        .padding(.bottom, 4)
     }
-    
-    private var actionLabel: String {
-        switch dayType {
-        case "strength": return "Start Workout"
-        case "cardio": return "Log Cardio"
-        default: return "Mark Rest Day Complete"
-        }
-    }
-    
-    private var iconForDayType: String {
-        switch dayType {
-        case "strength": return "figure.strengthtraining.traditional"
-        case "cardio": return "figure.run"
-        default: return "moon.fill"
-        }
-    }
-    
+
     // MARK: - Helpers
-    
-    private func formatVolume(_ volume: Double) -> String {
-        if volume >= 1000 {
-            return String(format: "%.1fk lbs", volume / 1000)
-        }
-        return String(format: "%.0f lbs", volume)
-    }
-    
+
     private func relativeDate(_ date: Date) -> String {
-        let days = Calendar.current.dateComponents([.day], from: date, to: Date()).day ?? 0
+        let days = Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: date), to: Calendar.current.startOfDay(for: Date())).day ?? 0
         if days == 0 { return "today" }
         if days == 1 { return "yesterday" }
         if days < 7 { return "\(days) days ago" }
         return "\(days / 7)w ago"
-    }
-}
-
-// MARK: - No Training Panel (shown when no training today)
-
-struct NoTrainingPanel: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(Color.atlasTextMuted.opacity(0.1))
-                        .frame(width: 40, height: 40)
-                    
-                    Image(systemName: "moon.fill")
-                        .font(.system(size: 17))
-                        .foregroundColor(.atlasTextMuted.opacity(0.5))
-                }
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("TODAY'S TRAINING")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(.atlasTextMuted)
-                        .tracking(1.5)
-                    
-                    Text("No workout scheduled")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.atlasTextMuted)
-                }
-                
-                Spacer()
-            }
-            
-            Text("Focus on your habits today. Recovery matters.")
-                .font(.system(size: 13))
-                .foregroundColor(.atlasTextMuted.opacity(0.6))
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 18)
-        .background(Color.atlasCardDark)
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.atlasTextMuted.opacity(0.08), lineWidth: 1)
-        )
     }
 }
 
@@ -433,14 +300,13 @@ struct NoTrainingPanel: View {
         Color.atlasBackground.ignoresSafeArea()
         TrainingDayPanel(
             todaysWorkout: nil,
-            trainingHabit: nil,
             isCompleted: false,
+            recoveryState: .manageIt,
             lastSessionVolume: 12400,
             lastSessionDate: Calendar.current.date(byAdding: .day, value: -3, to: Date()),
             lastCardioSession: nil,
             onStartWorkout: {},
-            onStartCardio: {},
-            onMarkRestComplete: {}
+            onStartCardio: {}
         )
         .padding(.horizontal, 20)
     }

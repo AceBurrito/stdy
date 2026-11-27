@@ -321,7 +321,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -378,7 +378,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -404,9 +404,9 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Steadfast uses the camera to take progress photos for tracking your body composition journey.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Steadfast uses Face ID to protect your body composition data.";
-				INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription = "Steadfast analyzes your health metrics to provide evidence-based coaching.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Steadfast needs access to your health data to provide personalized longevity coaching and track your progress.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Steadfast may update your health data to log workouts and habits.";
+				INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription = "Health records are not used.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Reads sleep, HRV and resting heart rate to assess daily recovery, plus weight, body fat and workouts to track your training and body composition.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Saves the workouts you log to Apple Health.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Steadfast saves comparison photos to your library.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -448,9 +448,9 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Steadfast uses the camera to take progress photos for tracking your body composition journey.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Steadfast uses Face ID to protect your body composition data.";
-				INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription = "Steadfast analyzes your health metrics to provide evidence-based coaching.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Steadfast needs access to your health data to provide personalized longevity coaching and track your progress.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Steadfast may update your health data to log workouts and habits.";
+				INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription = "Health records are not used.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Reads sleep, HRV and resting heart rate to assess daily recovery, plus weight, body fat and workouts to track your training and body composition.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Saves the workouts you log to Apple Health.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Steadfast saves comparison photos to your library.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

@@ -12,8 +12,8 @@ struct WorkoutLogView: View {
     @Query private var profiles: [UserProfile]
     @Query(sort: \WorkoutSession.date, order: .reverse) private var previousSessions: [WorkoutSession]
     
-    // Optional habit integration (pre-fills when coming from habit card)
-    var habit: Habit? = nil
+    // Optional planned day (pre-fills exercises when launched from Today's training card)
+    var plannedDay: PlannedWorkoutDay? = nil
     var onComplete: (() -> Void)? = nil
     
     // Draft restoration (set by parent when resuming)
@@ -211,7 +211,7 @@ struct WorkoutLogView: View {
                 if let draft = restoredDraft {
                     restoreFromDraft(draft)
                 } else {
-                    loadFromHabitIfNeeded()
+                    loadFromPlanIfNeeded()
                 }
                 // FEAT-002: Start Apple Watch workout session
                 Task { await WorkoutSessionManager.shared.startWorkoutSession() }
@@ -877,18 +877,8 @@ struct WorkoutLogView: View {
     
     // MARK: - Load from Plan
     
-    private func loadFromHabitIfNeeded() {
-        guard let habit = habit,
-            let dayOfWeek = habit.dayOfWeek else { return }
-        let descriptor = FetchDescriptor<TrainingProgram>(
-            predicate: #Predicate { $0.isActive == true }
-        )
-        guard let program = (try? modelContext.fetch(descriptor))?.first else { return }
-        let workoutDays = program.isEventPlan
-            ? (program.workoutWeeks.first { $0.weekNumber == (profiles.first?.currentEventWeek ?? 1) }?.days ?? [])
-            : program.workoutDays
-        guard let plannedDay = workoutDays.first(where: { $0.dayOfWeek == dayOfWeek }),
-            plannedDay.dayType == "strength" else { return }
+    private func loadFromPlanIfNeeded() {
+        guard let plannedDay, plannedDay.dayType == "strength" else { return }
         loadWorkoutFromPlan(plannedDay)
     }
     
@@ -1008,22 +998,15 @@ struct WorkoutLogView: View {
             }
         }
         
-        if let habit = habit {
-            let dataController = DataController(modelContext: modelContext)
-            dataController.markHabitComplete(habit)
-        } else {
-            // BUG-006: When launched ad-hoc (not from a specific habit card),
-            // mark the matching training habit for today as complete so the
-            // Today tab training card shows checked.
-            markMatchingTrainingHabitComplete()
+        // Mark the planned day done. Today's training card also treats any
+        // strength session logged today as completion, so ad-hoc workouts count.
+        if let plannedDay {
+            plannedDay.isPrimaryCompleted = true
+            plannedDay.isPrimaryCompletedDate = Date()
         }
         
         do {
             try modelContext.save()
-
-            if let profile = userProfile {
-                StrengthDataMerger.mergeAndUpdate(profile: profile, modelContext: modelContext)
-            }
             
             WorkoutDraftManager.clearDraft()
             SharedWorkoutStore.clear()
@@ -1054,38 +1037,6 @@ struct WorkoutLogView: View {
     }
     
     // MARK: - Helpers
-    
-    /// BUG-006: When launched ad-hoc (not via a Habit card reference), find and mark
-    /// today's matching strength training habit complete so the Today tab updates.
-    private func markMatchingTrainingHabitComplete() {
-        let calendar = Calendar.current
-        let todayWeekday = calendar.component(.weekday, from: Date()) - 1 // 0=Sun..6=Sat
-        
-        // Fetch all strength training habits for today's day of week
-        let habitDescriptor = FetchDescriptor<Habit>(
-            predicate: #Predicate<Habit> { h in
-                h.isTrainingHabit == true &&
-                h.trainingDayType == "strength" &&
-                h.isActive == true
-            }
-        )
-        guard let trainingHabits = try? modelContext.fetch(habitDescriptor) else { return }
-        
-        let todaysHabit = trainingHabits.first { h in
-            h.dayOfWeek == todayWeekday
-        }
-        
-        if let matchedHabit = todaysHabit {
-            let dataController = DataController(modelContext: modelContext)
-            // Only mark if not already completed today
-            if !dataController.isHabitComplete(habit: matchedHabit, on: Date()) {
-                dataController.markHabitComplete(matchedHabit)
-                print("✅ BUG-006: Marked training habit '\(matchedHabit.title)' complete for today")
-            }
-        } else {
-            print("ℹ️ BUG-006: No strength training habit found for today (weekday \(todayWeekday)) — ad-hoc workout, no card to mark")
-        }
-    }
     
     private func dayName(for dayOfWeek: Int) -> String {
         let days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
@@ -1430,7 +1381,7 @@ struct ExerciseSwapSheet: View {
                             Text("No alternatives found")
                                 .font(.system(size: 16))
                                 .foregroundColor(.atlasTextMuted)
-                            Text("Ask your coach in chat for suggestions.")
+                            Text("Pick a replacement from the full exercise list instead.")
                                 .font(.system(size: 14))
                                 .foregroundColor(.atlasTextMuted.opacity(0.7))
                         }

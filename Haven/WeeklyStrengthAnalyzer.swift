@@ -4,7 +4,7 @@ import SwiftData
 // MARK: - Weekly Strength Analyzer
 // Compares the best set per exercise this week vs last week.
 // Returns e1RM changes and progression status for each tracked lift.
-// Used by: EnhancedWeeklyCheckInView (Step 2), CoachingContextBuilder (AI prompt)
+// Not wired into the UI after the Steady pivot; kept for Sprint 2 progress views.
 
 struct WeeklyStrengthAnalyzer {
     

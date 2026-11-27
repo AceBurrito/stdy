@@ -2,60 +2,53 @@ import Foundation
 import SwiftData
 
 // MARK: - User Profile
+//
+// Steady pivot (Nov 2026): Habit, Pace, longevity tier, nutrition, event and
+// weekly check-in fields were removed. SwiftData drops removed attributes in a
+// lightweight migration; no beta users exist, so no data carry-over is needed.
+// CloudKit rules: every property has a default or is optional, no unique
+// constraints, relationships optional.
 @Model
 class UserProfile {
     var id: UUID = UUID()
     var onboardingComplete: Bool = false
-    var onboardingCompletedDate: Date?  // BUG-003: For 7-day milestone grace period
+    var onboardingCompletedDate: Date?
     var hasSeenTrainingIntro: Bool = false  // UX-001: Training program intro card
     var currentDay: Int = 1
     var currentWeek: Int = 0
-    var currentTier: String = "Seeker"
     
-    
-    // Health data
+    // Basics (used for metabolic age and HR zones)
     var age: Int?
-    var height: Double?
-    var weight: Double?
+    var height: Double?          // inches
+    var weight: Double?          // lbs
     var name: String?
     var gender: String?
-    var currentProteinIntake: Double?
-    var proteinIsEstimated: Bool = true
-    var targetWakeTime: Date?
-    var selfReportedSleepHours: Double?
-
-    // Intervention Selection
-    var selectedInterventionIds: [String]?
-    var selectedInterventionsJSON: String?
-    var lastInterventionUnlockDate: Date?
     
-    // Week tracking
+    // Body composition starting point
+    /// Body fat % as a fraction (0.18 = 18%). Nil when unknown.
+    var bodyFatPercent: Double?
+    /// Target body fat % as a fraction. Drives the smart goal weight (Sprint 2).
+    var targetBodyFatPercent: Double?
+    
+    // Plan tracking
     var planActivationDate: Date?
     var currentWeekStartDate: Date?
     
     // Training context
-    var currentActivities: String?
-    var lovedExercises: String?
-    var availableEquipment: String?
-    var trainingConstraints: String?  
+    /// "lose_fat", "build_muscle", "recomp", "maintain" (see SteadyGoal)
     var primaryGoal: String?
+    /// Legacy Atlas field. No longer set by Steady.
     var secondaryGoal: String?
+    /// Display string from SteadyEquipment ("Bodyweight", "Dumbbells", "Full Gym")
+    var availableEquipment: String?
+    var trainingConstraints: String?
     var trainingDaysPerWeek: Int?
     var trainingMinutesPerSession: Int?
-    var activityLevel: String?
-    var trackProtein: Bool = false
-    var activitySchedule: String?
+    /// "beginner", "intermediate", "advanced"
     var experienceLevel: String?
-    var trainingScheduleJSON: String?
     var planAdjustmentCount: Int = 0
     var planAdjustmentWeekStart: Date?
-    var proteinGoal: Int?
-    var proteinGoalSource: String?
     var goalWeight: Double?
-    var lastZone2CoachingDate: Date?
-    var lastZone2CoachingResponse: String?
-    var lastCelebratedMilestone: Int?
-    var lastCheckInDate: Date?
 
     // Unit System Preference (stored as raw string for CloudKit compatibility)
     // "imperial", "metric", or "" for auto-detect from device locale
@@ -71,209 +64,14 @@ class UserProfile {
         }
     }
 
-    // Optimization Habits
-    var optimizationHabitsUnlocked: Bool = false
-    var optimizationHabitsDeclinedDate: Date?
-
-    // Event Training
-    var isTrainingForEvent: Bool = false
-    var eventType: String?
-    var eventName: String?
-    var eventDate: Date?
-    var hasExistingPlan: Bool = false
-    var existingPlanDetails: String?
-    var existingPlanWeek: Int?
-    var trainingMode: String = "longevity"
-    var eventCompletedDate: Date?
-    @Relationship(deleteRule: .nullify, inverse: \UserCapabilityAssessment.userProfile)
-    var currentAssessment: UserCapabilityAssessment?
-
-
-    
-    // Event week tracking (SINGLE SET)
-    var currentEventWeek: Int = 1
-    var eventPlanStartDate: Date?
-    var lastEventWeekAdvanceDate: Date?
-    var missedWorkoutsInPeriod: Int = 0
-    var lastMissedWorkoutCheck: Date?
-    var bailoutPromptShownDate: Date?
-    var weeklyCommitDate: Date?  
-    var lastDeloadWeekDate: Date?
-
-    // ============================================
-    // TRAINING TIER SYSTEM (0-4)
-    // 0 = Recovery, 1 = Beginner, 2 = Active, 3 = Advanced, 4 = Beast Mode
-    // ============================================
-    var trainingTier: Int?
-    var trainingTierName: String?
-    var trainingTierAssessedAt: Date?
-    var lastTrainingTierReassessmentDate: Date?
-
-    // ============================================
-    // LONGEVITY TIER SYSTEM
-    // "at_risk", "rising", "phoenix", "optimal", "elite"
-    // ============================================
-    var longevityTier: String?
-    var longevityTierPercentile: Int?
-    var longevityTierRevealedAt: Date?
-    var lastLongevityTierCalculationDate: Date?
-
-    // Longevity Tier Assessment
-    var longevityTierAssessmentAvailableDate: Date?
-    var lastLongevityTierAssessmentDate: Date?
-    var nextLongevityTierAssessmentDate: Date?
-    var lastTierRecalculation: Date?
-
-
-    // ============================================
-    // TIER PROGRESSION TRACKING
-    // ============================================
-    var consistentWeeksAtCurrentTier: Int = 0
-    var tierProgressionHistoryJSON: String?  // [{"date": "...", "fromTier": 1, "toTier": 2, "reason": "..."}]
-
-    // ============================================
-    // CRISIS MODE
-    // ============================================
-    var isCrisisMode: Bool = false
-    var crisisModeStartDate: Date?
-    var crisisModeReason: String?
-
-    // ============================================
-    // RECOVERY TIER (TIER 0) SPECIFIC
-    // ============================================
-    var hasMedicalClearance: Bool?
-    var medicalClearanceDate: Date?
-    var approvedExercisesJSON: String?  // From PT/doctor
-    var nextMedicalCheckInDate: Date?
-    var recoveryCondition: String?  // "post_surgery", "chronic_condition", "severe_limitation"
-
-    var movementPlanStartDate: Date?
-
-    // Strength Assessment Data
-    var benchPressMax: Double?
-    var squatMax: Double?
-    var deadliftMax: Double?
-    var pushupRange: String?  // "0-5", "6-15", "16-30", "31-50", "50+"
-    var canStandFromSitting: Bool?
-    var deadHangRange: String?  // "cant", "under_15", "15-30", "30-60", "60+"
-    var strengthDataSource: String?  // "selfReported", "bodyweightOnly", "dontKnow", "workoutDerived"
-
-
-    var lastAIHabitChangeDate: Date?
-
-    // ============================================
-    // PACE SCORING SYSTEM
-    // ============================================
-    var latestPaceValue: Double?
-    var latestPaceDate: Date?
-    var latestPaceConfidence: String?
-    var paceBaselineValue: Double?        // First calculated Pace (from onboarding)
-    var paceBaselineDate: Date?
-    var bestPaceEver: Double?             // Lowest Pace achieved (lower = better)
-    var bestPaceDate: Date?
-    var lastStrengthAssessmentDate: Date?
-    var userExercisesRegularly: Bool = false
-
-    // ============================================
-    // MORNING BRIEF TRACKING (Sprint 1 — Engagement Overhaul)
-    // ============================================
-    var lastBriefVarietyKey: String?      // Prevents same template category 2 days in a row
-    var lastBriefDate: Date?              // When last brief was generated
-    var announcedPRExerciseIDs: [String] = []  // BUG-012: Track which PR exercise announcements have been shown
-
-    // ============================================
-    // STREAK PERSISTENCE (Sprint 1 — Engagement Overhaul)
-    // ============================================
-    var longestStreakEver: Int = 0                // Personal best streak (updated on each app launch)
-    var lastCelebratedStreakMilestone: Int = 0    // Highest streak milestone already celebrated (3/7/14/21/30/50/100)
-    var morningBriefNotificationEnabled: Bool = false
-
     init() {
         self.id = UUID()
         self.onboardingComplete = false
-        self.onboardingCompletedDate = nil
         self.currentDay = 1
         self.currentWeek = 0
-        self.currentTier = "Seeker"
-        self.planActivationDate = nil
-        self.currentWeekStartDate = nil
-        self.name = nil
-        self.gender = nil
-        
-        // Training defaults
-        self.experienceLevel = nil
-        self.currentActivities = nil
-        self.lovedExercises = nil
-        self.availableEquipment = nil
-        self.trainingConstraints = nil
-        self.trainingDaysPerWeek = nil
-        self.trainingMinutesPerSession = nil
-        
-        // Event defaults
-        self.isTrainingForEvent = false
-        self.trainingMode = "longevity"
-        self.hasExistingPlan = false
-        self.currentEventWeek = 1
-        self.missedWorkoutsInPeriod = 0
-        self.weeklyCommitDate = nil
-        self.lastDeloadWeekDate = nil
-
-        self.selectedInterventionIds = nil
-        self.selectedInterventionsJSON = nil
-        self.lastInterventionUnlockDate = nil
-
-        // AI Master Prompt Additions
-        self.trainingTier = nil
-        self.trainingTierName = nil
-        self.trainingTierAssessedAt = nil
-        self.lastTrainingTierReassessmentDate = nil
-
-        self.longevityTier = nil
-        self.longevityTierPercentile = nil
-        self.longevityTierRevealedAt = nil
-        self.lastLongevityTierCalculationDate = nil
-
-        self.consistentWeeksAtCurrentTier = 0
-        self.tierProgressionHistoryJSON = nil
-
-        self.isCrisisMode = false
-        self.crisisModeStartDate = nil
-        self.crisisModeReason = nil
-
-        self.hasMedicalClearance = nil
-        self.medicalClearanceDate = nil
-        self.approvedExercisesJSON = nil
-        self.nextMedicalCheckInDate = nil
-        self.recoveryCondition = nil
-
-        // Pace defaults
-        self.latestPaceValue = nil
-        self.latestPaceDate = nil
-        self.latestPaceConfidence = nil
-        self.paceBaselineValue = nil
-        self.paceBaselineDate = nil
-        self.bestPaceEver = nil
-        self.bestPaceDate = nil
-        self.lastStrengthAssessmentDate = nil
-        self.userExercisesRegularly = false
-        self.strengthDataSource = nil
-
-        // Morning Brief defaults (Sprint 1)
-        self.lastBriefVarietyKey = nil
-        self.lastBriefDate = nil
-
-        // Streak persistence defaults (Sprint 1)
-        self.longestStreakEver = 0
-        self.lastCelebratedStreakMilestone = 0
-
-        // Notification preferences (Sprint 5 — Notification Overhaul)
-        self.morningBriefNotificationEnabled = false
     }
     
     // MARK: - Inverse Relationships (required for CloudKit — must be optional)
-    @Relationship(deleteRule: .cascade, inverse: \Habit.userProfile)
-    var habits: [Habit]?
-    
     @Relationship(deleteRule: .cascade, inverse: \HealthMetrics.userProfile)
     var healthMetrics: [HealthMetrics]?
     
@@ -289,510 +87,14 @@ class UserProfile {
     @Relationship(deleteRule: .cascade, inverse: \ProgressPhoto.userProfile)
     var progressPhotos: [ProgressPhoto]?
     
-    @Relationship(deleteRule: .cascade, inverse: \WeeklyCheckIn.userProfile)
-    var weeklyCheckIns: [WeeklyCheckIn]?
-    
     @Relationship(deleteRule: .cascade, inverse: \TrainingProgram.userProfile)
     var trainingPrograms: [TrainingProgram]?
     
     @Relationship(deleteRule: .cascade, inverse: \PersonalRecord.userProfile)
     var personalRecords: [PersonalRecord]?
-    
-    @Relationship(deleteRule: .cascade, inverse: \ProteinEntry.userProfile)
-    var proteinEntries: [ProteinEntry]?
-    
-    @Relationship(deleteRule: .cascade, inverse: \CoachingEntry.userProfile)
-    var coachingEntries: [CoachingEntry]?
-    
-    @Relationship(deleteRule: .cascade, inverse: \LongevityPlan.userProfile)
-    var longevityPlans: [LongevityPlan]?
-    
-    @Relationship(deleteRule: .cascade, inverse: \LongevityTierHistory.userProfile)
-    var longevityTierHistories: [LongevityTierHistory]?
-    
-    @Relationship(deleteRule: .cascade, inverse: \BiologicalPaceScore.userProfile)
-    var biologicalPaceScores: [BiologicalPaceScore]?
-    
-    @Relationship(deleteRule: .cascade, inverse: \ComponentMilestone.userProfile)
-    var componentMilestones: [ComponentMilestone]?
-    
-    @Relationship(deleteRule: .cascade, inverse: \EventMasterPlan.userProfile)
-    var eventMasterPlans: [EventMasterPlan]?
-    
-    @Relationship(deleteRule: .cascade, inverse: \EventWeeklyCheckIn.userProfile)
-    var eventWeeklyCheckIns: [EventWeeklyCheckIn]?
 
-    // Sprint 1 — Morning Brief inverse relationship
-    @Relationship(deleteRule: .cascade, inverse: \MorningBriefEntry.userProfile)
-    var morningBriefEntries: [MorningBriefEntry]?
-
-    // Workout Routines
     @Relationship(deleteRule: .cascade, inverse: \WorkoutRoutine.userProfile)
     var workoutRoutines: [WorkoutRoutine]?
-}
-
-// MARK: - User Capability Assessment
-@Model
-class UserCapabilityAssessment {
-    var id: UUID = UUID()
-    
-    // Event type this assessment is for
-    var eventType: String = ""
-    
-    // Universal assessment fields
-    var runningCapability: String = ""
-    var recentRaces: [String] = []
-    var strengthTrainingFrequency: String = ""
-    var weeklyTimeAvailable: String = ""
-    var strengthDaysPerWeek: Int? // 0, 1, 2, or 3
-    var strengthGoal: String? // "injury_prevention" or "build_strength"
-    var equipmentAccess: String? // "full_gym" or "home_gym"
-    
-    // Optional fields for different event types
-    var swimmingCapability: String?
-    var cyclingCapability: String?
-    var triathlonExperience: String?
-    var functionalFitnessBackground: [String]?
-    var availableEquipment: [String]?
-    
-    // HYROX-specific
-    var trainsAtHyroxGym: Bool?
-    
-    // Timeline calculations (set by CapabilityAssessor)
-    var minimumWeeksRequired: Int?
-    var recommendedWeeks: Int?
-    
-    // Timestamp
-    var createdDate: Date = Date()
-    
-    // Inverse handled by UserProfile.currentAssessment
-    var userProfile: UserProfile?
-    
-    // Simple initializer for EventCreationFlow
-    init(eventType: String) {
-        self.id = UUID()
-        self.eventType = eventType
-        
-        // Initialize with empty/default values
-        self.runningCapability = ""
-        self.recentRaces = []
-        self.strengthTrainingFrequency = ""
-        self.weeklyTimeAvailable = ""
-        
-        self.swimmingCapability = nil
-        self.cyclingCapability = nil
-        self.triathlonExperience = nil
-        self.functionalFitnessBackground = nil
-        self.availableEquipment = nil
-        self.trainsAtHyroxGym = nil
-        
-        self.minimumWeeksRequired = nil
-        self.recommendedWeeks = nil
-        
-        self.createdDate = Date()
-        self.userProfile = nil
-    }
-    
-    // Inverse for EventMasterPlan.assessment (required for CloudKit)
-    @Relationship(deleteRule: .nullify, inverse: \EventMasterPlan.assessment)
-    var eventMasterPlans: [EventMasterPlan]?
-}
-
-// MARK: - Event Template
-@Model
-final class EventTemplate {
-    var id: UUID = UUID()
-    var eventType: String = ""
-    var experienceLevel: String = ""
-    var weekDuration: Int = 0
-    
-    // Matching criteria
-    var minRunningCapability: String = ""
-    var maxRunningCapability: String = ""
-    var requiresRecentRace: Bool = false
-    var requiresStrengthBase: Bool = false
-    var templateDescription: String = ""  // RENAMED from 'description'
-    
-    // Full plan storage
-    var fullPlanJSON: String = "[]"
-    var phasesJSON: String = "{}"
-    
-    var createdDate: Date = Date()
-    var lastUpdated: Date = Date()
-    
-    init(eventType: String, experienceLevel: String, weekDuration: Int) {
-        self.id = UUID()
-        self.eventType = eventType
-        self.experienceLevel = experienceLevel
-        self.weekDuration = weekDuration
-        self.minRunningCapability = ""
-        self.maxRunningCapability = ""
-        self.requiresRecentRace = false
-        self.requiresStrengthBase = false
-        self.templateDescription = ""  // UPDATED
-        self.fullPlanJSON = "[]"
-        self.phasesJSON = "{}"
-        self.createdDate = Date()
-        self.lastUpdated = Date()
-    }
-}
-
-// MARK: - Event Master Plan (High-level periodization)
-@Model
-class EventMasterPlan {
-    var id: UUID = UUID()
-    var eventType: String = ""
-    var eventName: String?
-    var eventDate: Date?
-    var totalWeeks: Int = 0
-    var createdAt: Date = Date()
-    var isActive: Bool = true
-    
-    // Periodization data
-    var phasesJSON: String?
-    var weeklyTargetsJSON: String?
-    var weeklyStructureJSON: String?
-    
-    // Status tracking
-    var status: String = "scheduled" // "scheduled", "active", "completed", "cancelled"
-    var scheduledStartDate: Date? // When training should start (for future-dated events)
-    var actualStartDate: Date? // When user actually started
-    var eventCompletionDate: Date? // When event happened
-    
-    // Assessment reference
-    var assessmentId: UUID? // Link to UserCapabilityAssessment
-    var timelineWarningsJSON: String? // JSON array of warnings shown to user
-    
-    // Template tracking
-    var usesTemplates: Bool = true // Whether this plan uses templates for weeks 1-3
-    var templateId: UUID? // Reference to template used
-    var personalizationTriggered: Bool = false
-    var personalizationDate: Date?
-    
-    // Reminder tracking
-    var fourWeekReminderSent: Bool = false
-    var fourWeekReminderDate: Date?
-    var twoWeekReminderSent: Bool = false
-    var twoWeekReminderDate: Date?
-    var activationReminderSent: Bool = false
-    
-    // User confirmation (for future-dated events)
-    var userConfirmed: Bool? // nil = pending, true = confirmed, false = cancelled
-    var confirmationDate: Date?
-    
-    // Equipment (for HYROX)
-    var equipmentJSON: String? // Stores equipment availability + substitutions
-    
-    // Relationships
-    @Relationship(deleteRule: .nullify) var userProfile: UserProfile?
-    @Relationship(deleteRule: .nullify) var assessment: UserCapabilityAssessment?
-    
-    init(eventType: String, totalWeeks: Int) {
-        self.id = UUID()
-        self.eventType = eventType
-        self.totalWeeks = totalWeeks
-        self.createdAt = Date()
-        self.isActive = true
-    }
-    
-    func getWeeklyTarget(for week: Int) -> WeeklyTarget? {
-        guard let json = weeklyTargetsJSON,
-              let data = json.data(using: .utf8),
-              let targets = try? JSONDecoder().decode([WeeklyTarget].self, from: data) else {
-            return nil
-        }
-        return targets.first { $0.week == week }
-    }
-    
-    func getPhase(for week: Int) -> String {
-        guard let json = phasesJSON,
-              let data = json.data(using: .utf8),
-              let phases = try? JSONDecoder().decode([String: [Int]].self, from: data) else {
-            return "Training"
-        }
-        
-        for (phase, range) in phases {
-            if range.count == 2 && week >= range[0] && week <= range[1] {
-                return phase.capitalized
-            }
-        }
-        return "Training"
-    }
-}
-
-// MARK: - Event Weekly Check-In
-@Model
-class EventWeeklyCheckIn {
-    var id: UUID = UUID()
-    var eventPlanId: UUID = UUID()
-    var weekNumber: Int = 0
-    var checkInDate: Date = Date()
-    
-    // Training Adherence
-    var workoutsCompleted: Int = 0
-    var workoutsPlanned: Int = 0
-    var adherenceRate: Double = 0.0
-    
-    // Biomarkers (from Apple Health)
-    var hrvAverage: Double?
-    var hrvBaseline: Double?
-    var sleepAverage: Double?
-    var rhrAverage: Double?
-    var rhrBaseline: Double?
-    
-    // Subjective Feedback
-    var energyLevel: Int? // 1-5
-    var recoveryFeeling: Int? // 1-5
-    var soreness: String? // "none", "minor", "concerning"
-    var sorenessAreas: [String] = []
-    var motivationLevel: Int? // 1-5
-    var stressLevel: Int? // 1-5
-    var userNotes: String?
-    
-    // Performance Data (JSON - event specific)
-    var performanceDataJSON: String?
-    // Example for running: {"easyPace": "10:15/mile", "tempoPace": "9:25/mile", "longRunPace": "10:30/mile"}
-    
-    // AI Coaching Response
-    var aiAnalysis: String?
-    var aiAdjustmentsJSON: String? // JSON array of adjustments
-    var aiCoachingMessage: String?
-    var apiCost: Double?
-    
-    // Relationship
-    @Relationship(deleteRule: .nullify) var userProfile: UserProfile?
-    
-    init(eventPlanId: UUID, weekNumber: Int) {
-        self.id = UUID()
-        self.eventPlanId = eventPlanId
-        self.weekNumber = weekNumber
-        self.checkInDate = Date()
-    }
-}
-
-// MARK: - Weekly Target (for JSON decoding)
-struct WeeklyTarget: Codable {
-    let week: Int
-    let phase: String
-    let totalVolume: String
-    let focus: String
-    let keyWorkouts: [String]
-    let swimSessions: Int?
-    let bikeSessions: Int?
-    let runSessions: Int?
-    let strengthSessions: Int?
-    let brickSession: Bool?
-}
-
-// MARK: - Daily Check-In
-@Model
-class DailyCheckIn {
-    var id: UUID = UUID()
-    var dayNumber: Int = 0
-    var date: Date = Date()
-    var type: String = ""
-    
-    var feelingNow: Int?
-    var stressLevel: Int?
-    var notes: String?
-    
-    var bedtime: Date?
-    var wakeTime: Date?
-    var morningFeeling: Int?
-    var timeInBed: Double?
-    
-    init(dayNumber: Int, date: Date, type: String) {
-        self.id = UUID()
-        self.dayNumber = dayNumber
-        self.date = date
-        self.type = type
-    }
-}
-
-// MARK: - Morning Brief Entry (Sprint 1 — Engagement Overhaul)
-@Model
-class MorningBriefEntry {
-    var id: UUID = UUID()
-    var date: Date = Date()
-    var dayNumber: Int = 0
-    var headline: String = ""
-    var body: String = ""
-    var todayPreview: String?
-    var accentColor: String = "teal"   // "teal", "amber", "coral"
-    var icon: String = "sun.max.fill"
-    var varietyKey: String = ""
-    var userProfile: UserProfile?
-
-    init(dayNumber: Int, headline: String, body: String, todayPreview: String? = nil, accentColor: String = "teal", icon: String = "sun.max.fill", varietyKey: String) {
-        self.id = UUID()
-        self.date = Date()
-        self.dayNumber = dayNumber
-        self.headline = headline
-        self.body = body
-        self.todayPreview = todayPreview
-        self.accentColor = accentColor
-        self.icon = icon
-        self.varietyKey = varietyKey
-    }
-}
-
-// MARK: - Habit Model
-@Model
-class Habit {
-    var id: UUID = UUID()
-    var title: String = ""
-    var details: String = ""
-    var pillar: String = ""
-    var startDate: Date = Date()
-    var isActive: Bool = true
-
-    var habitType: String = "non_negotiable"
-    var isTrainingHabit: Bool = false
-    var trainingDayType: String?
-    var isUnlocked: Bool = true
-    var dayOfWeek: Int?
-
-    var howToGuide: String?
-    var researchCitation: String?
-    var interventionId: String?
-    var sortOrder: Int = 0
-    
-    @Relationship(deleteRule: .cascade) var completions: [HabitCompletion]?
-    var userProfile: UserProfile?
-    
-    init(
-        title: String,
-        details: String,
-        pillar: String,
-        startDate: Date = Date(),
-        habitType: String = "non_negotiable",
-        isTrainingHabit: Bool = false,
-        trainingDayType: String? = nil,
-        isUnlocked: Bool = true,
-        dayOfWeek: Int? = nil,
-        howToGuide: String? = nil,
-        researchCitation: String? = nil,
-        interventionId: String? = nil
-    ) {
-        self.id = UUID()
-        self.title = title
-        self.details = details
-        self.pillar = pillar
-        self.startDate = startDate
-        self.isActive = true
-        self.habitType = habitType
-        self.isTrainingHabit = isTrainingHabit
-        self.trainingDayType = trainingDayType
-        self.isUnlocked = isUnlocked
-        self.dayOfWeek = dayOfWeek
-        self.howToGuide = howToGuide
-        self.researchCitation = researchCitation
-        self.interventionId = interventionId
-    }
-    
-    func appliesTo(date: Date) -> Bool {
-        guard isTrainingHabit, let habitDay = dayOfWeek else { return true }
-        let calendar = Calendar.current
-        let dateWeekday = calendar.component(.weekday, from: date) - 1
-        return habitDay == dateWeekday
-    }
-}
-
-// MARK: - Lesson Model
-@Model
-class Lesson {
-    var id: UUID = UUID()
-    var dayNumber: Int = 0
-    var title: String = ""
-    var pillar: String = ""
-    var content: String = ""
-    
-    init(dayNumber: Int, title: String = "", pillar: String = "", content: String = "") {
-        self.id = UUID()
-        self.dayNumber = dayNumber
-        self.title = title
-        self.pillar = pillar
-        self.content = content
-    }
-}
-
-// MARK: - Lesson Progress Model
-@Model
-class LessonProgress {
-    var id: UUID = UUID()
-    var dayNumber: Int = 0
-    var completed: Bool = false
-    var completedAt: Date?
-    
-    init(dayNumber: Int, completed: Bool = false) {
-        self.id = UUID()
-        self.dayNumber = dayNumber
-        self.completed = completed
-        self.completedAt = completed ? Date() : nil
-    }
-}
-
-// MARK: - Habit Completion Model
-@Model
-class HabitCompletion {
-    var id: UUID = UUID()
-    var date: Date = Date()
-    var completed: Bool = false
-    var habit: Habit?
-    
-    init(date: Date, completed: Bool = false) {
-        self.id = UUID()
-        self.date = Calendar.current.startOfDay(for: date)
-        self.completed = completed
-    }
-}
-
-// MARK: - Weekly Check-In
-@Model
-class WeeklyCheckIn {
-    var id: UUID = UUID()
-    var weekNumber: Int = 0
-    var date: Date = Date()
-    
-    var energyLevel: Int?
-    var biggestChallenge: String?
-    var biggestWin: String?
-    var overallRating: Int?
-    
-    var habitCompletionRate: Double?
-    var sleepAverage: Double?
-    var hrvAverage: Double?
-    var rhrAverage: Double?
-    
-    var aiCoachingFeedback: String?
-    
-    var protocolRecommendation: String?
-    var recommendationAccepted: Bool?
-    var recommendationReasoning: String?
-    var recommendationChanges: [String]?
-
-    var lastCheckInDate: Date?
-
-
-    // ⭐ NEW: Tier-related fields
-    var isFirstCheckIn: Bool = false  // Flag for Longevity Tier reveal
-    var longevityTierRevealed: Bool = false  // Track if tier was shown
-    var longevityTierAtCheckIn: String?  // Snapshot of tier at this check-in
-    var longevityTierPercentileAtCheckIn: Int?  // Snapshot of percentile
-    var tierProgressionDetected: Bool = false  // Did user progress a training tier?
-    var newTrainingTier: Int?  // If progressed, what's the new tier?
-    
-    var userProfile: UserProfile?
-    
-    init(weekNumber: Int, date: Date) {
-        self.id = UUID()
-        self.weekNumber = weekNumber
-        self.date = date
-        self.protocolRecommendation = nil
-        self.recommendationAccepted = nil
-        self.recommendationReasoning = nil
-        self.recommendationChanges = nil
-    }
 }
 
 // MARK: - Health Metrics
@@ -1209,8 +511,8 @@ class WorkoutSet {
 class BodyCompEntry {
     var id: UUID = UUID()
     var date: Date = Date()
-    var weight: Double = 0
-    var bodyFat: Double?
+    var weight: Double = 0          // lbs
+    var bodyFat: Double?            // fraction, 0.18 = 18%
     var waistCircumference: Double?
     var notes: String?
     
@@ -1370,42 +672,5 @@ class PersonalRecord {
         self.recordType = recordType
         self.value = value
         self.date = date
-    }
-}
-
-// MARK: - Protein Entry
-@Model
-final class ProteinEntry {
-    var date: Date = Date()
-    var grams: Int = 0
-    var isEstimated: Bool = false
-    var userProfile: UserProfile?
-    
-    init(date: Date, grams: Int, isEstimated: Bool = false) {
-        self.date = date
-        self.grams = grams
-        self.isEstimated = isEstimated
-    }
-}
-
-// MARK: - Coaching Entry
-@Model
-class CoachingEntry {
-    var id: UUID = UUID()
-    var date: Date = Date()
-    var type: String = ""
-    var title: String = ""
-    var content: String = ""
-    var weekNumber: Int?
-    
-    var userProfile: UserProfile?
-    
-    init(type: String, title: String, content: String, weekNumber: Int? = nil) {
-        self.id = UUID()
-        self.date = Date()
-        self.type = type
-        self.title = title
-        self.content = content
-        self.weekNumber = weekNumber
     }
 }

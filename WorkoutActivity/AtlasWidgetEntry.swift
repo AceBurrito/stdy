@@ -1,27 +1,16 @@
 // AtlasWidgetEntry.swift
 // WorkoutActivity (Widget Extension target ONLY)
 //
-// Data model for the Atlas home screen widget timeline entries.
+// Data model for the home screen widget timeline entries.
+// Values are written by the app (WidgetDataWriter) into App Group UserDefaults.
 
 import WidgetKit
 
 struct AtlasWidgetEntry: TimelineEntry {
     let date: Date
 
-    // Top line — contextual message
-    let paceChanged: Bool
-    let paceDirection: String       // "improved" or "update"
-    let checkInAvailable: Bool
-    let checkInCompleted: Bool
-
-    // Streak
-    let streakCount: Int
-
-    // Habits
-    let habitsTotal: Int
-    let habitsCompleted: Int
-    let habitNames: [String]
-    let habitStates: [Bool]
+    // Recovery — raw value of the app's RecoveryState ("ready", "good", "manage", "recover"), "" if unknown
+    let recoveryState: String
 
     // Training
     let workoutName: String
@@ -30,6 +19,25 @@ struct AtlasWidgetEntry: TimelineEntry {
     let isRestDay: Bool
     let workoutCompleted: Bool
 
-    // Meta
-    let dayCount: Int
+    // Body snapshot (pre-formatted by the app in the user's units)
+    let weightText: String
+    let bodyFatText: String
+    let weightTrendText: String
+}
+
+// MARK: - Sample Data
+
+extension AtlasWidgetEntry {
+    static let sample = AtlasWidgetEntry(
+        date: Date(),
+        recoveryState: "good",
+        workoutName: "Upper A",
+        workoutExerciseCount: 5,
+        workoutType: "strength",
+        isRestDay: false,
+        workoutCompleted: false,
+        weightText: "182.4 lbs",
+        bodyFatText: "18.2%",
+        weightTrendText: "−0.8 lbs / 7d"
+    )
 }

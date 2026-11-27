@@ -4,7 +4,7 @@ import SwiftData
 // MARK: - Weekly Cardio Analyzer
 // Compares cardio sessions this week vs last week.
 // Pulls from CardioSession model (logged via ManualCardioLogView).
-// Used by: EnhancedWeeklyCheckInView (Step 3), CoachingContextBuilder (AI prompt)
+// Not wired into the UI after the Steady pivot; kept for Sprint 2 progress views.
 
 struct WeeklyCardioAnalyzer {
     

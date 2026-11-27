@@ -8,6 +8,7 @@ struct HealthData {
     var biologicalSex: String?
     var height: Double? // in inches
     var weight: Double? // in pounds
+    var bodyFatPercentage: Double? // fraction, 0.18 = 18%
     var vo2Max: Double?
     var restingHeartRate: Double?
     var heartRateVariability: Double?
@@ -57,6 +58,7 @@ class HealthKitManager: ObservableObject {
             // Body measurements
             HKObjectType.quantityType(forIdentifier: .height)!,
             HKObjectType.quantityType(forIdentifier: .bodyMass)!, // weight
+            HKObjectType.quantityType(forIdentifier: .bodyFatPercentage)!,
             
             // Sleep
             HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!,
@@ -94,6 +96,7 @@ class HealthKitManager: ObservableObject {
         async let sex = fetchBiologicalSex()
         async let height = fetchHeight()
         async let weight = fetchWeight()
+        async let bodyFat = fetchBodyFatPercentage()
         async let vo2 = fetchVO2Max()
         async let rhr = fetchRestingHeartRate()
         async let hrv = fetchHeartRateVariability()
@@ -102,6 +105,7 @@ class HealthKitManager: ObservableObject {
         healthData.biologicalSex = await sex
         healthData.height = await height
         healthData.weight = await weight
+        healthData.bodyFatPercentage = await bodyFat
         healthData.vo2Max = await vo2
         healthData.restingHeartRate = await rhr
         healthData.heartRateVariability = await hrv
@@ -260,7 +264,6 @@ class HealthKitManager: ObservableObject {
         return await fetchSleepAverageForDays(endDate: endDate, days: 7)
     }
     
-    // ⭐ Made non-private for Pace calculator access
     func fetchSleepAverageForDays(endDate: Date, days: Int) async -> Double? {
         guard let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else {
             return nil
@@ -372,7 +375,6 @@ class HealthKitManager: ObservableObject {
         return await fetchHRVAverageForDays(endDate: endDate, days: 7)
     }
     
-    // ⭐ Made non-private for Pace calculator access
     // NOTE: HRV uses HKStatisticsQuery .discreteAverage which naturally averages only
     // across days WITH readings. No BUG-008 fix needed — HealthKit handles it.
     func fetchHRVAverageForDays(endDate: Date, days: Int) async -> Double? {
@@ -407,7 +409,6 @@ class HealthKitManager: ObservableObject {
         return await fetchRHRAverageForDays(endDate: endDate, days: 7)
     }
     
-    // ⭐ Made non-private for Pace calculator access
     // NOTE: RHR uses HKStatisticsQuery .discreteAverage — same as HRV, no BUG-008 fix needed.
     func fetchRHRAverageForDays(endDate: Date, days: Int) async -> Double? {
         guard let rhrType = HKQuantityType.quantityType(forIdentifier: .restingHeartRate) else {
@@ -670,6 +671,26 @@ class HealthKitManager: ObservableObject {
                     let weightInKg = sample.quantity.doubleValue(for: HKUnit.gramUnit(with: .kilo))
                     let weightInLbs = weightInKg * 2.20462
                     continuation.resume(returning: weightInLbs)
+                } else {
+                    continuation.resume(returning: nil)
+                }
+            }
+            self.healthStore.execute(query)
+        }
+    }
+    
+    /// Latest body fat sample as a fraction (0.18 = 18%).
+    func fetchBodyFatPercentage() async -> Double? {
+        guard let bodyFatType = HKQuantityType.quantityType(forIdentifier: .bodyFatPercentage) else {
+            return nil
+        }
+        
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+        
+        return await withCheckedContinuation { continuation in
+            let query = HKSampleQuery(sampleType: bodyFatType, predicate: nil, limit: 1, sortDescriptors: [sortDescriptor]) { _, results, _ in
+                if let sample = results?.first as? HKQuantitySample {
+                    continuation.resume(returning: sample.quantity.doubleValue(for: HKUnit.percent()))
                 } else {
                     continuation.resume(returning: nil)
                 }
@@ -985,10 +1006,10 @@ class HealthKitManager: ObservableObject {
         
         print("📊 Starting smart metrics sync...")
         
-        await syncTodaysSleep(modelContext: modelContext)
+        await syncToday(modelContext: modelContext)
         await syncYesterdayWithRefresh(modelContext: modelContext)
-        await syncMissingMetrics(modelContext: modelContext, daysBack: 7)
-        await calculateAndStoreDailyPace(modelContext: modelContext)
+        // 30 days of history feeds the Recovery Score's personal baselines
+        await syncMissingMetrics(modelContext: modelContext, daysBack: 30)
         
         print("✅ Smart metrics sync complete")
         
@@ -1002,14 +1023,20 @@ class HealthKitManager: ObservableObject {
         }
     }
     
-    private func syncTodaysSleep(modelContext: ModelContext) async {
+    /// Syncs this morning's recovery inputs: last night's sleep plus today's
+    /// HRV and resting heart rate (Apple Watch records both overnight).
+    private func syncToday(modelContext: ModelContext) async {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         
-        print("📊 Syncing today's sleep...")
+        print("📊 Syncing today's recovery inputs...")
         
-        guard let sleepData = await fetchSleepForDate(Date()) else {
-            print("⚠️ No sleep data available for today yet")
+        let sleepData = await fetchSleepForDate(Date())
+        let hrv = await fetchHRVForDate(Date())
+        let rhr = await fetchRHRForDate(Date())
+        
+        guard sleepData != nil || hrv != nil || rhr != nil else {
+            print("⚠️ No recovery data available for today yet")
             return
         }
         
@@ -1018,25 +1045,26 @@ class HealthKitManager: ObservableObject {
         )
         
         do {
-            let existingMetrics = try modelContext.fetch(descriptor)
-            
-            if let existing = existingMetrics.first {
-                existing.sleepDuration = sleepData.duration
-                existing.bedtime = sleepData.bedtime
-                existing.wakeTime = sleepData.wakeTime
-                print("✅ Updated today's sleep: \(String(format: "%.1f", sleepData.duration))h")
+            let metrics: HealthMetrics
+            if let existing = try modelContext.fetch(descriptor).first {
+                metrics = existing
             } else {
-                let metrics = HealthMetrics(date: today)
+                metrics = HealthMetrics(date: today)
+                modelContext.insert(metrics)
+            }
+            
+            if let sleepData {
                 metrics.sleepDuration = sleepData.duration
                 metrics.bedtime = sleepData.bedtime
                 metrics.wakeTime = sleepData.wakeTime
-                modelContext.insert(metrics)
-                print("✅ Created today's sleep entry: \(String(format: "%.1f", sleepData.duration))h")
             }
+            if let hrv { metrics.heartRateVariability = hrv }
+            if let rhr { metrics.restingHeartRate = rhr }
             
             try modelContext.save()
+            print("✅ Today's recovery inputs — sleep: \(sleepData.map { String(format: "%.1f", $0.duration) } ?? "–")h, HRV: \(hrv.map { String(format: "%.0f", $0) } ?? "–"), RHR: \(rhr.map { String(format: "%.0f", $0) } ?? "–")")
         } catch {
-            print("❌ Failed to sync today's sleep: \(error)")
+            print("❌ Failed to sync today's recovery inputs: \(error)")
         }
     }
     
@@ -1098,151 +1126,6 @@ class HealthKitManager: ObservableObject {
         }
         
         return Date() > expectedAvailableTime.addingTimeInterval(4 * 3600)
-    }
-    
-    // MARK: - ⭐ DAILY PACE CALCULATION ⭐
-    
-    func calculateAndStoreDailyPace(modelContext: ModelContext) async {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        
-        print("🎯 Calculating daily Pace score...")
-        
-        let profileDescriptor = FetchDescriptor<UserProfile>()
-        guard let profile = try? modelContext.fetch(profileDescriptor).first else {
-            print("❌ No user profile found for Pace calculation")
-            return
-        }
-        
-        guard let age = profile.age, age > 0 else {
-            print("❌ No age available for Pace calculation")
-            return
-        }
-        
-        // BUG-008: These methods now correctly average only across days with actual data
-        let sleepAvg = await fetchSleepAverageForDays(endDate: Date(), days: 7)
-        let hrvAvg = await fetchHRVAverageForDays(endDate: Date(), days: 7)
-        let rhrAvg = await fetchRHRAverageForDays(endDate: Date(), days: 7)
-        let stepsAvg = await fetchStepsAverageForDays(endDate: Date(), days: 7)
-        
-        let vo2MaxLatest = await fetchVO2Max()
-        let weightLatest = profile.weight
-        
-        print("🎯 Pace inputs — Sleep: \(sleepAvg.map { String(format: "%.2f", $0) } ?? "nil")h, HRV: \(hrvAvg.map { String(format: "%.1f", $0) } ?? "nil")ms, RHR: \(rhrAvg.map { String(format: "%.1f", $0) } ?? "nil")bpm, Steps: \(stepsAvg.map { String(format: "%.0f", $0) } ?? "nil"), VO2: \(vo2MaxLatest.map { String(format: "%.1f", $0) } ?? "nil")")
-        
-        let pushupRange = profile.pushupRange
-        let canStand = profile.canStandFromSitting
-        let deadHangRange = profile.deadHangRange
-        let benchMax = profile.benchPressMax
-        let squatMax = profile.squatMax
-        let deadliftMax = profile.deadliftMax
-        
-        let result = LifespanPaceCalculator.calculate(
-            age: age,
-            gender: profile.gender,
-            sleepAverage: sleepAvg,
-            hrvAverage: hrvAvg,
-            rhrAverage: rhrAvg,
-            vo2Max: vo2MaxLatest,
-            stepsAverage: stepsAvg,
-            bodyweight: weightLatest,
-            height: profile.height,
-            pushupRange: pushupRange,
-            canStandFromSitting: canStand,
-            deadHangRange: deadHangRange,
-            benchPressMax: benchMax,
-            squatMax: squatMax,
-            deadliftMax: deadliftMax
-        )
-        
-        guard result.confidenceLevel != "insufficient" else {
-            print("⚠️ Insufficient data for Pace calculation (0 components)")
-            return
-        }
-        
-        print("🎯 Pace result — Sleep %ile: \(result.sleepPercentile.map { String(format: "%.1f", $0) } ?? "nil") (from \(result.sleepHoursUsed.map { String(format: "%.2f", $0) } ?? "nil")h), Pace: \(String(format: "%.2f", result.paceValue))")
-        
-        let historyDescriptor = FetchDescriptor<BiologicalPaceScore>(
-            sortBy: [SortDescriptor(\.date, order: .reverse)]
-        )
-        let history = (try? modelContext.fetch(historyDescriptor)) ?? []
-        let historicalData = history.map { (date: $0.date, paceValue: $0.paceValue) }
-        
-        let (trend, direction) = LifespanPaceCalculator.calculateTrend(
-            currentPace: result.paceValue,
-            historicalScores: historicalData
-        )
-        
-        var finalResult = result
-        finalResult.trend30Day = trend
-        finalResult.trendDirection = direction
-        
-        do {
-            let existingDescriptor = FetchDescriptor<BiologicalPaceScore>(
-                predicate: #Predicate { $0.date == today }
-            )
-            let existing = try modelContext.fetch(existingDescriptor)
-            
-            let score: BiologicalPaceScore
-            if let existingScore = existing.first {
-                existingScore.paceValue = finalResult.paceValue
-                existingScore.compositePercentile = finalResult.compositePercentile
-                existingScore.confidenceLevel = finalResult.confidenceLevel
-                existingScore.componentsAvailable = finalResult.componentsAvailable
-                existingScore.populate(from: finalResult)
-                existingScore.userProfile = profile
-                score = existingScore
-                print("✅ Updated today's Pace: \(String(format: "%.2f", score.paceValue))")
-            } else {
-                let newScore = BiologicalPaceScore(
-                    date: today,
-                    paceValue: finalResult.paceValue,
-                    compositePercentile: finalResult.compositePercentile,
-                    confidenceLevel: finalResult.confidenceLevel,
-                    componentsAvailable: finalResult.componentsAvailable
-                )
-                newScore.populate(from: finalResult)
-                newScore.userProfile = profile
-                modelContext.insert(newScore)
-                score = newScore
-                print("✅ Created today's Pace: \(String(format: "%.2f", score.paceValue))")
-            }
-            
-            profile.latestPaceValue = finalResult.paceValue
-            profile.latestPaceDate = today
-            profile.latestPaceConfidence = finalResult.confidenceLevel
-            
-            if profile.paceBaselineValue == nil {
-                profile.paceBaselineValue = finalResult.paceValue
-                profile.paceBaselineDate = today
-                print("📌 Set Pace baseline: \(String(format: "%.2f", finalResult.paceValue))")
-            }
-            
-            if profile.bestPaceEver == nil || finalResult.paceValue < (profile.bestPaceEver ?? 999) {
-                profile.bestPaceEver = finalResult.paceValue
-                profile.bestPaceDate = today
-                print("🏆 New best Pace: \(String(format: "%.2f", finalResult.paceValue))")
-            }
-            
-            try modelContext.save()
-            
-            let baseline = history.last
-            let previous = history.first
-            let newMilestones = MilestoneDetector.detectMilestones(
-                latest: score,
-                previous: previous,
-                baseline: baseline,
-                modelContext: modelContext
-            )
-            if !newMilestones.isEmpty {
-                print("🎯 \(newMilestones.count) new milestone(s) detected")
-            }
-            
-            print(LifespanPaceCalculator.debugDescription(for: finalResult))
-            
-        } catch {
-            print("❌ Failed to store Pace score: \(error)")
-        }
     }
     
     // MARK: - HealthKit Observers (Debounced)

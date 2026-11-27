@@ -9,6 +9,5 @@ import SwiftUI
 
 @Observable
 class NavigationRouter {
-    var selectedTab: Int = 0
-    var showWeeklyCheckIn: Bool = false
+    var selectedTab: Int = AppTab.today.rawValue
 }

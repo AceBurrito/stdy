@@ -13,18 +13,16 @@ struct CardioImportConfirmationView: View {
     @State private var selectedType: CardioActivityType
     @State private var isSaving = false
 
-    // Optional callback and habit
-    var habit: Habit? = nil
+    // Optional callback
     var onComplete: (() -> Void)? = nil
 
     private var userProfile: UserProfile? {
         profiles.first
     }
 
-    init(workout: WorkoutSummary, analysisResult: WorkoutAnalysisResult, habit: Habit? = nil, onComplete: (() -> Void)? = nil) {
+    init(workout: WorkoutSummary, analysisResult: WorkoutAnalysisResult, onComplete: (() -> Void)? = nil) {
         self.workout = workout
         self.analysisResult = analysisResult
-        self.habit = habit
         self.onComplete = onComplete
         self._selectedType = State(initialValue: analysisResult.activityType)
     }
@@ -351,12 +349,6 @@ struct CardioImportConfirmationView: View {
         session.sessionType = selectedType.rawValue
 
         modelContext.insert(session)
-
-        // Mark habit complete if provided
-        if let habit = habit {
-            let dataController = DataController(modelContext: modelContext)
-            dataController.markHabitComplete(habit)
-        }
 
         do {
             try modelContext.save()

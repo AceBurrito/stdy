@@ -10,7 +10,6 @@ struct BodyCompView: View {
     @Query private var profiles: [UserProfile]
     @Query(sort: \BodyCompEntry.date, order: .reverse) private var bodyCompEntries: [BodyCompEntry]
     @Query(sort: \ProgressPhoto.date, order: .reverse) private var progressPhotos: [ProgressPhoto]
-    @Query(sort: \ProteinEntry.date, order: .reverse) private var proteinEntries: [ProteinEntry]
     
     @State private var showingAddWeight = false
     @State private var showingAddPhoto = false
@@ -18,7 +17,6 @@ struct BodyCompView: View {
     @State private var showingImageSourcePicker = false
     @State private var showingCamera = false
     @State private var capturedImage: UIImage?
-    @State private var showingProteinLog = false
     @AppStorage("bodyCompProtectionEnabled") private var protectionEnabled = false
 @State private var isUnlocked = false
 @State private var showingSettings = false
@@ -45,17 +43,6 @@ struct BodyCompView: View {
         let recent = bodyCompEntries[0].weight
         let weekAgo = bodyCompEntries[min(6, bodyCompEntries.count - 1)].weight
         return recent - weekAgo
-    }
-    
-    private var todayProtein: ProteinEntry? {
-        let calendar = Calendar.current
-        return proteinEntries.first { calendar.isDateInToday($0.date) }
-    }
-    
-    private var sevenDayProteinAverage: Int {
-        let recent = Array(proteinEntries.prefix(7))
-        guard !recent.isEmpty else { return 0 }
-        return recent.reduce(0) { $0 + $1.grams } / recent.count
     }
     
     var body: some View {
@@ -153,9 +140,6 @@ private var bodyContent: some View {
                 // Weight Tracking Section
                 weightTrackingSection
                 
-                // Protein Section
-                proteinSection
-                
                 // Progress Photos Section
                 progressPhotosSection
                 
@@ -209,9 +193,6 @@ private var bodyContent: some View {
             savePhoto(image)
             capturedImage = nil
         }
-    }
-    .sheet(isPresented: $showingProteinLog) {
-        ProteinLogSheet()
     }
     .sheet(isPresented: $showingPhotoComparison) {
     PhotoComparisonView()
@@ -308,104 +289,6 @@ private var weightTrackingSection: some View {
         .buttonStyle(PlainButtonStyle())
     }
 }
-    
-    // MARK: - Protein Section
-    private var proteinSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("PROTEIN INTAKE")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(.atlasAccent)
-                    .tracking(2)
-                
-                Spacer()
-                
-                Button(action: { showingProteinLog = true }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "plus.circle.fill")
-                        Text("Log")
-                    }
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.atlasPrimary)
-                }
-            }
-            
-            HStack(spacing: 20) {
-                // Today's intake
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Today")
-                        .font(.system(size: 13))
-                        .foregroundColor(.atlasTextMuted)
-                    
-                    if let today = todayProtein {
-                        Text("\(today.grams)g")
-                            .font(.system(size: 24, weight: .semibold))
-                            .foregroundColor(.atlasText)
-                    } else {
-                        Text("—")
-                            .font(.system(size: 24, weight: .semibold))
-                            .foregroundColor(.atlasTextMuted)
-                    }
-                }
-                
-                Divider()
-                    .frame(height: 40)
-                
-                // Goal
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Goal")
-                        .font(.system(size: 13))
-                        .foregroundColor(.atlasTextMuted)
-                    
-                    if let goal = userProfile?.proteinGoal {
-                        Text("\(goal)g")
-                            .font(.system(size: 24, weight: .semibold))
-                            .foregroundColor(.atlasAccent)
-                    } else {
-                        Text("Not set")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.atlasTextMuted)
-                    }
-                }
-                
-                Divider()
-                    .frame(height: 40)
-                
-                // 7-day avg
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("7-Day Avg")
-                        .font(.system(size: 13))
-                        .foregroundColor(.atlasTextMuted)
-                    
-                    Text("\(sevenDayProteinAverage)g")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.atlasText)
-                }
-            }
-            .padding(20)
-            .background(Color.white.opacity(0.05))
-            .cornerRadius(12)
-            
-            // View History link
-            NavigationLink(destination: ProteinHistoryView()) {
-                HStack {
-                    Text("View History")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.atlasText)
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14))
-                        .foregroundColor(.atlasTextMuted.opacity(0.5))
-                }
-                .padding(14)
-                .background(Color.white.opacity(0.03))
-                .cornerRadius(10)
-            }
-            .buttonStyle(PlainButtonStyle())
-        }
-    }
     
     // MARK: - Progress Photos Section
     // MARK: - Progress Photos Section

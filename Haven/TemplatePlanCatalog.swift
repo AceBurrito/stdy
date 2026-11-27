@@ -202,7 +202,7 @@ struct TrainingPlanCatalog {
         name: "Foundation — Dumbbells",               // ✅ RENAMED from "Longevity Foundation"
         category: .foundation,
         tagline: "The movements that matter most. Dumbbells only.",
-        description: "Three full-body sessions per week. Compound lifts, carries, grip work, and mobility — what longevity research says matters most. No barbell required.",
+        description: "Three full-body sessions per week. Compound lifts, carries, grip work, and mobility. A balanced base for any goal. No barbell required.",
         strengthDays: 3,
         splitType: "Full Body",
         equipmentTier: .dumbbells,
@@ -260,7 +260,7 @@ struct TrainingPlanCatalog {
         name: "Foundation — Full Gym",                // ✅ RENAMED from "Longevity Foundation"
         category: .foundation,
         tagline: "Build strength in the movements that matter most.",
-        description: "Three full-body sessions built around barbell compounds, carries, and grip work — the exercises longevity research says matter most for aging well.",
+        description: "Three full-body sessions built around barbell compounds, carries, and grip work — a balanced base for any goal, built to progress for months.",
         strengthDays: 3,
         splitType: "Full Body",
         equipmentTier: .fullGym,

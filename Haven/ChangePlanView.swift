@@ -57,11 +57,6 @@ struct ChangePlanView: View {
                             showPlanPreview = true
                         },
                         onBuildYourOwn: { showCustomBuilder = true },
-                        onEventTraining: {
-                            // Route to existing EventCreationFlow — dismiss this sheet
-                            // and let the parent handle navigation
-                            dismiss()
-                        },
                         onKeepCurrent: { dismiss() },
                         isChangePlanFlow: true
                     )
