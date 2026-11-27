@@ -226,8 +226,8 @@ struct WorkoutHistoryView: View {
 
     private var volumeFootnote: String {
         let base = planSets != nil
-            ? "The tick is the sets your plan gives each muscle group per week. Sets count toward the exercise's main muscle."
-            : "The tick is your weekly minimum: 10 working sets for big muscle groups, 6 for arms and core, scaled to your experience. Set up a plan and the targets follow it instead. Sets count toward the exercise's main muscle."
+            ? "The tick is the sets your plan gives each muscle group per week. Compound lifts also count half a set for the muscles that assist: presses for triceps, rows and pull-ups for biceps, squats for glutes."
+            : "The tick is your weekly minimum: 10 working sets for big muscle groups, 6 for arms and core, scaled to your experience. Set up a plan and the targets follow it instead. Compound lifts also count half a set for the muscles that assist: presses for triceps, rows and pull-ups for biceps, squats for glutes."
         if volumeWindow == .thisWeek {
             let day = Calendar.current.component(.weekday, from: Date())
             let daysLeft = day == 1 ? 0 : 8 - day

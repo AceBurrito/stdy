@@ -27,6 +27,36 @@ struct MuscleGroupResolver {
     func isBodyweight(_ exerciseName: String) -> Bool {
         ExerciseLibrary.find(name: exerciseName)?.isBodyweight ?? false
     }
+
+    /// Muscles that assist a compound lift. Each working set counts as half a
+    /// set for these (the common convention for counting weekly volume).
+    func secondaryGroups(for exerciseName: String) -> [MuscleGroup] {
+        guard let def = ExerciseLibrary.find(name: exerciseName) else { return [] }
+        return SecondaryMuscles.groups(for: def)
+    }
+}
+
+// MARK: - Secondary Muscles
+
+/// Rules for which muscles assist a compound lift. Isolation lifts have none.
+/// Presses help triceps (and chest presses the front delts), pulls help biceps,
+/// squats and lunges help glutes, hinges help the back.
+enum SecondaryMuscles {
+    static let setWeight = 0.5
+
+    static func groups(for def: ExerciseDefinition) -> [MuscleGroup] {
+        guard def.isCompound else { return [] }
+        let name = def.name.lowercased()
+        switch def.muscleGroup {
+        case .chest: return [.triceps, .shoulders]
+        case .back: return [.biceps]
+        case .quads: return [.hamstringsGlutes]
+        case .hamstringsGlutes: return name.contains("deadlift") || name.contains("good morning") ? [.back] : []
+        case .shoulders: return [.triceps]
+        case .triceps: return [.chest]
+        case .biceps, .core: return []
+        }
+    }
 }
 
 // MARK: - Weekly Volume Targets
@@ -64,16 +94,20 @@ enum VolumeTargets {
 enum PlanVolume {
     static func weeklySets(program: TrainingProgram?, resolver: MuscleGroupResolver) -> [MuscleGroup: Int]? {
         guard let program = program else { return nil }
-        var totals: [MuscleGroup: Int] = [:]
+        var totals: [MuscleGroup: Double] = [:]
         var hasExercises = false
         for day in program.workoutDays where day.dayType == "strength" {
             for exercise in day.exercises {
                 hasExercises = true
                 guard let group = resolver.group(for: exercise.name) else { continue }
-                totals[group, default: 0] += max(exercise.targetSets, 0)
+                let sets = Double(max(exercise.targetSets, 0))
+                totals[group, default: 0] += sets
+                for secondary in resolver.secondaryGroups(for: exercise.name) {
+                    totals[secondary, default: 0] += sets * SecondaryMuscles.setWeight
+                }
             }
         }
-        return hasExercises ? totals : nil
+        return hasExercises ? totals.mapValues { Int($0.rounded()) } : nil
     }
 }
 
@@ -139,8 +173,11 @@ enum MuscleVolume {
         for session in sessions where session.date >= start && session.date < end {
             for exercise in session.exercises {
                 guard let group = resolver.group(for: exercise.name) else { continue }
-                let working = exercise.sets.filter { $0.reps > 0 }.count
-                totals[group, default: 0] += Double(working)
+                let working = Double(exercise.sets.filter { $0.reps > 0 }.count)
+                totals[group, default: 0] += working
+                for secondary in resolver.secondaryGroups(for: exercise.name) {
+                    totals[secondary, default: 0] += working * SecondaryMuscles.setWeight
+                }
             }
         }
         return totals
