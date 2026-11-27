@@ -223,6 +223,9 @@ struct NewOnboardingFlow: View {
         profile.currentWeek = 1
         profile.planActivationDate = Date()
 
+        // Weekly summary is on by default; ask once, as the user lands in the app
+        NotificationManager.shared.requestPermission { _ in }
+
         do {
             try modelContext.save()
             print("✅ Onboarding complete — goal: \(profile.primaryGoal ?? "none"), experience: \(profile.experienceLevel ?? "none"), equipment: \(profile.availableEquipment ?? "none")")

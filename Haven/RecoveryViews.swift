@@ -14,7 +14,7 @@ struct RecoveryHeroCard: View {
         Button(action: onTap) {
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
-                    Text("Recovery").steadyLabel()
+                    Text("Recovery").steadySectionHeader()
                     Spacer()
                     if assessment?.isCalibrating == true {
                         Text("Calibrating").steadyLabel(.atlasAmber)
@@ -210,7 +210,7 @@ struct RecoveryDetailSheet: View {
     private func componentRow(_ component: RecoveryComponent) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
-                Text(component.kind.label).steadyLabel()
+                Text(component.kind.label).steadyLabel(.steadyTextFaint)
                 Spacer()
                 Text("\(Int(component.kind.weight * 100))% of score")
                     .font(SteadyType.caption)
@@ -250,7 +250,7 @@ struct RecoveryDetailSheet: View {
 
     private var howItWorks: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("How it's scored").steadyLabel()
+            Text("How it's scored").steadySectionHeader()
             Text("Sleep counts for 40%, HRV for 35% and resting heart rate for 25%. HRV and resting heart rate are compared with your own 30-day averages, not population norms. Days without data are skipped, never counted as zero.")
                 .font(SteadyType.caption)
                 .foregroundColor(.atlasTextMuted)

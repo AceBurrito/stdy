@@ -1,5 +1,5 @@
 // TODAY VIEW — Steady
-// Layout: date line → Recovery hero → Today's training → Body snapshot.
+// Layout: date line → Recovery hero → Body snapshot (opens Body tab) → Today's training → Insights.
 // No habits, no streaks, no Pace. Recovery state drives the training guidance.
 
 import SwiftUI
@@ -9,12 +9,14 @@ import WidgetKit
 struct TodayView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.unitFormatter) private var unitFormatter
+    @Environment(NavigationRouter.self) private var router
     @Query private var profiles: [UserProfile]
     @Query(filter: #Predicate<TrainingProgram> { $0.isActive == true }) private var activePrograms: [TrainingProgram]
     @Query(sort: \HealthMetrics.date, order: .reverse) private var allMetrics: [HealthMetrics]
     @Query(sort: \WorkoutSession.date, order: .reverse) private var allWorkoutSessions: [WorkoutSession]
     @Query(sort: \CardioSession.date, order: .reverse) private var allCardioSessions: [CardioSession]
     @Query(sort: \BodyCompEntry.date, order: .reverse) private var bodyCompEntries: [BodyCompEntry]
+    @Query private var customExercises: [CustomExercise]
 
     // Sheets
     @State private var showWorkoutLog = false
@@ -61,11 +63,43 @@ struct TodayView: View {
         BodySnapshot.from(entries: Array(bodyCompEntries.prefix(60)), profile: profiles.first)
     }
 
+    private var bodyState: BodyState {
+        BodyState.from(entries: Array(bodyCompEntries.prefix(120)), profile: profiles.first)
+    }
+
     private var bodyGoal: BodyGoal? {
-        BodyGoal.from(
-            state: BodyState.from(entries: Array(bodyCompEntries.prefix(120)), profile: profiles.first),
-            targetBodyFat: profiles.first?.targetBodyFatPercent
+        BodyGoal.from(state: bodyState, targetBodyFat: profiles.first?.targetBodyFatPercent)
+    }
+
+    private var metabolicAge: MetabolicAge? {
+        MetabolicAge.estimate(profile: profiles.first, state: bodyState)
+    }
+
+    private var insights: [DailyInsight] {
+        let calendar = Calendar.current
+        let cutoff = calendar.date(byAdding: .day, value: -70, to: Date()) ?? Date()
+        let recentSessions = allWorkoutSessions.filter { $0.date >= cutoff }
+        let resolver = MuscleGroupResolver(customExercises: customExercises)
+        let weekStart = MuscleVolume.weekStart(for: Date())
+
+        let strengthDays = activePrograms.first?.workoutDays.filter { $0.dayType == "strength" } ?? []
+        let today = TodayTraining.todayDayOfWeek()          // 0 = Sunday
+        let remainingDays: Set<Int> = today == 0 ? [0] : Set(Array(today...6) + [0])
+        let daysLeft = strengthDays.filter { remainingDays.contains($0.dayOfWeek) }.count
+
+        let input = InsightInputs(
+            metrics: Array(allMetrics.prefix(40)),
+            lifts: LiftAnalytics.histories(sessions: recentSessions, resolver: resolver),
+            volumeRows: MuscleVolume.rows(sessions: recentSessions, window: .thisWeek, experience: profiles.first?.experienceLevel, resolver: resolver,
+                                          plan: PlanVolume.weeklySets(program: activePrograms.first, resolver: resolver)),
+            bodyState: bodyState,
+            bodyGoal: bodyGoal,
+            plannedDaysLeftThisWeek: daysLeft,
+            sessionsThisWeek: recentSessions.filter { $0.date >= weekStart }.count,
+            plannedSessionsPerWeek: strengthDays.isEmpty ? nil : strengthDays.count,
+            unitFormatter: unitFormatter
         )
+        return DailyInsightsEngine.insights(input)
     }
 
     private var recentPRCount: Int {
@@ -84,6 +118,13 @@ struct TodayView: View {
                         showRecoveryDetail = true
                     }
 
+                    Button {
+                        router.selectedTab = AppTab.body.rawValue
+                    } label: {
+                        BodySnapshotCard(snapshot: bodySnapshot, goal: bodyGoal, metabolicAge: metabolicAge, showsChevron: true)
+                    }
+                    .buttonStyle(.plain)
+
                     TrainingDayPanel(
                         todaysWorkout: todaysPlannedWorkout,
                         isCompleted: isTrainingComplete,
@@ -95,7 +136,10 @@ struct TodayView: View {
                         onStartCardio: { showCardioLog = true }
                     )
 
-                    BodySnapshotCard(snapshot: bodySnapshot, goal: bodyGoal)
+                    let todaysInsights = insights
+                    if !todaysInsights.isEmpty {
+                        InsightsCard(insights: todaysInsights)
+                    }
 
                     if isTrainingComplete && !hasSeenWidgetPrompt && !widgetAlreadyAdded {
                         WidgetPromptCard(
@@ -198,14 +242,24 @@ struct TodayView: View {
 struct BodySnapshotCard: View {
     let snapshot: BodySnapshot
     var goal: BodyGoal? = nil
+    var metabolicAge: MetabolicAge? = nil
+    var showsChevron: Bool = false
     @Environment(\.unitFormatter) private var unitFormatter
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Body").steadyLabel()
+            HStack {
+                Text("Body").steadySectionHeader()
+                Spacer()
+                if showsChevron {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.steadyTextFaint)
+                }
+            }
 
             if snapshot.weight == nil {
-                Text("Log your weight on the Body tab to track lean mass and body fat here.")
+                Text("Log your weight on the Body tab to see weight, body fat and metabolic age here.")
                     .font(SteadyType.body)
                     .foregroundColor(.atlasTextMuted)
                     .fixedSize(horizontal: false, vertical: true)
@@ -226,10 +280,11 @@ struct BodySnapshotCard: View {
                     )
                     separator
                     column(
-                        label: "Lean mass",
-                        value: snapshot.leanMass.map { formattedWeight($0) } ?? "—",
-                        unit: snapshot.leanMass == nil ? "" : unitFormatter.weightUnit,
-                        footnote: snapshot.leanMass == nil ? "needs body fat" : nil
+                        label: "Metabolic age",
+                        value: metabolicAge.map { "\($0.years)" } ?? "—",
+                        unit: metabolicAge == nil ? "" : "yrs",
+                        footnote: metabolicAgeFootnote,
+                        footnoteColor: (metabolicAge.map { $0.years < $0.actualAge } ?? false) ? .atlasPrimary : .atlasTextMuted
                     )
                 }
                 if let goal {
@@ -250,6 +305,15 @@ struct BodySnapshotCard: View {
         .steadyPanel()
     }
 
+    private var metabolicAgeFootnote: String {
+        guard let estimate = metabolicAge else {
+            return snapshot.bodyFatPercent == nil ? "needs body fat" : "needs age & height"
+        }
+        let diff = estimate.years - estimate.actualAge
+        if diff == 0 { return "= your age" }
+        return "\(abs(diff)) yr\(abs(diff) == 1 ? "" : "s") \(diff < 0 ? "younger" : "older")"
+    }
+
     private func goalStatus(_ goal: BodyGoal) -> String {
         if goal.isReached { return "reached" }
         let amount = String(format: "%.1f %@", unitFormatter.fromLbs(abs(goal.toGo)), unitFormatter.weightUnit)
@@ -267,13 +331,18 @@ struct BodySnapshotCard: View {
         String(format: "%.1f", unitFormatter.fromLbs(lbs))
     }
 
-    private func column(label: String, value: String, unit: String, footnote: String?) -> some View {
+    private func column(label: String, value: String, unit: String, footnote: String?, footnoteColor: Color = .atlasTextMuted) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(label).steadyLabel(.steadyTextFaint)
+            Text(label)
+                .steadyLabel(.steadyTextFaint)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(value)
-                    .font(SteadyType.metric(20))
+                    .font(SteadyType.metric(24))
                     .foregroundColor(value == "—" ? .steadyTextFaint : .atlasText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                 Text(unit)
                     .font(SteadyType.caption)
                     .foregroundColor(.atlasTextMuted)
@@ -281,7 +350,7 @@ struct BodySnapshotCard: View {
             if let footnote {
                 Text(footnote)
                     .font(SteadyType.caption)
-                    .foregroundColor(.atlasTextMuted)
+                    .foregroundColor(footnoteColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }

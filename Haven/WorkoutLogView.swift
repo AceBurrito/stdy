@@ -35,7 +35,7 @@ struct WorkoutLogView: View {
     @State private var activeRestTimer: RestTimer? = nil
     @State private var workoutStartTime: Date? = nil
     
-    // AI coaching state
+    // Coaching message state
     @State private var activeCoachingMessage: CoachingMessage? = nil
     
     // Drag and drop state
@@ -112,7 +112,7 @@ struct WorkoutLogView: View {
                 Color.atlasBackground.ignoresSafeArea()
                 
                 ScrollView {
-                    VStack(spacing: 24) {
+                    VStack(spacing: 20) {
                         headerSection
                         
                         if !exercises.isEmpty {
@@ -122,9 +122,9 @@ struct WorkoutLogView: View {
                         if exercises.isEmpty {
                             loadFromPlanSection
                             
-                            Divider()
-                                .background(Color.white.opacity(0.2))
-                                .padding(.horizontal, 24)
+                            Rectangle()
+                                .fill(Color.steadyHairline)
+                                .frame(height: 1)
                             
                             addExerciseButton
                         } else {
@@ -136,17 +136,17 @@ struct WorkoutLogView: View {
                         
                         Spacer().frame(height: 40)
                     }
-                    .padding(24)
+                    .padding(16)
                 }
                 .onTapGesture { hideKeyboard() }
                 
-                // AI Coaching Message (floating)
+                // Coaching message (floating)
                 if let message = activeCoachingMessage {
                     VStack {
                         CoachingMessageCard(message: message) {
                             withAnimation(.spring()) { activeCoachingMessage = nil }
                         }
-                        .padding(.horizontal, 24)
+                        .padding(.horizontal, 16)
                         .padding(.top, 120)
                         .transition(.move(edge: .top).combined(with: .opacity))
                         Spacer()
@@ -162,8 +162,8 @@ struct WorkoutLogView: View {
                             onDismiss: { dismissRestTimer() },
                             onAddTime: { activeRestTimer?.addTime(30) }
                         )
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 24)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 16)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                 }
@@ -346,117 +346,113 @@ struct WorkoutLogView: View {
     // MARK: - Header
     
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(Date().formatted(date: .abbreviated, time: .omitted).uppercased())
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(.atlasAccent)
-                .tracking(2)
+        VStack(alignment: .leading, spacing: 6) {
+            Text(Date().formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
+                .steadyLabel()
             
-            TextField("Workout Name", text: $workoutName)
-                .font(.system(size: 28, weight: .light))
+            TextField("Workout name", text: $workoutName)
+                .font(SteadyType.display(30))
                 .foregroundColor(.atlasText)
                 .textFieldStyle(.plain)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
     
-    // MARK: - Workout Summary Card (with volume)
+    // MARK: - Workout Summary (sets, time, volume)
     
     private var workoutSummaryCard: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("PROGRESS")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.atlasAccent)
-                        .tracking(1.5)
-                    
-                    Text("\(workoutStats.completedSets) of \(workoutStats.totalSets) sets • \(workoutStats.elapsedMinutes) min")
-                        .font(.system(size: 15))
-                        .foregroundColor(.atlasText)
-                }
-                
-                Spacer()
-                
-                ZStack {
-                    Circle()
-                        .stroke(Color.white.opacity(0.2), lineWidth: 3)
-                        .frame(width: 50, height: 50)
-                    Circle()
-                        .trim(from: 0, to: progressPercentage)
-                        .stroke(Color.atlasPrimary, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                        .frame(width: 50, height: 50)
-                        .rotationEffect(.degrees(-90))
-                        .animation(.easeInOut, value: progressPercentage)
-                    Text("\(Int(progressPercentage * 100))%")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.atlasPrimary)
-                }
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 0) {
+                summaryStat("Sets", value: "\(workoutStats.completedSets)", unit: "/ \(workoutStats.totalSets)")
+                summaryDivider
+                summaryStat("Time", value: "\(workoutStats.elapsedMinutes)", unit: "min")
+                summaryDivider
+                summaryStat(
+                    "Volume",
+                    value: workoutStats.totalVolume > 0 ? unitFormatter.displayVolume(workoutStats.totalVolume) : "—",
+                    unit: nil
+                )
             }
             
-            if workoutStats.totalVolume > 0 {
-                Divider().background(Color.white.opacity(0.1))
-                
-                HStack(spacing: 6) {
-                    Image(systemName: "scalemass.fill")
-                        .font(.system(size: 11))
-                    Text("Volume: \(unitFormatter.displayVolume(workoutStats.totalVolume))")
-                        .font(.system(size: 13))
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Rectangle().fill(Color.steadyRaised)
+                    Rectangle()
+                        .fill(Color.atlasPrimary)
+                        .frame(width: geo.size.width * progressPercentage)
+                        .animation(.easeInOut, value: progressPercentage)
                 }
-                .foregroundColor(.atlasTextMuted)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(height: 3)
+            .clipShape(RoundedRectangle(cornerRadius: 1.5))
+        }
+        .steadyPanel(padding: 14)
+    }
+    
+    private func summaryStat(_ label: String, value: String, unit: String?) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label).steadyLabel()
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(value)
+                    .font(SteadyType.metric(22))
+                    .foregroundColor(.atlasText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                if let unit = unit {
+                    Text(unit)
+                        .font(SteadyType.caption)
+                        .foregroundColor(.atlasTextMuted)
+                        .lineLimit(1)
+                }
             }
         }
-        .padding(16)
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(workoutInProgress ? Color.atlasPrimary.opacity(0.3) : Color.clear, lineWidth: 1)
-        )
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
+    private var summaryDivider: some View {
+        Rectangle()
+            .fill(Color.steadyHairline)
+            .frame(width: 1, height: 36)
+            .padding(.horizontal, 12)
     }
     
     // MARK: - Load from Plan
     
     private var loadFromPlanSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("LOAD FROM YOUR PLAN")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(.atlasAccent)
-                .tracking(2)
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Start from your plan").steadySectionHeader()
             
             if availablePlanWorkouts.isEmpty {
-                Text("No training plan found. Generate a plan in Training Schedule.")
-                    .font(.system(size: 14))
+                Text("No training plan yet. Set one up in Training Schedule, or add exercises below.")
+                    .font(SteadyType.body)
                     .foregroundColor(.atlasTextMuted)
-                    .padding(16)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.white.opacity(0.05))
-                    .cornerRadius(12)
+                    .steadyPanel()
             } else {
-                VStack(spacing: 8) {
-                    ForEach(availablePlanWorkouts, id: \.id) { workout in
+                VStack(spacing: 0) {
+                    ForEach(Array(availablePlanWorkouts.enumerated()), id: \.element.id) { index, workout in
+                        if index > 0 { Rectangle().fill(Color.steadyHairline).frame(height: 1) }
                         Button(action: { loadWorkoutFromPlan(workout) }) {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 3) {
                                     Text(workout.dayName)
-                                        .font(.system(size: 16, weight: .semibold))
+                                        .font(SteadyType.bodyEmphasis)
                                         .foregroundColor(.atlasText)
-                                    Text("\(workout.exercises.count) exercises • \(dayName(for: workout.dayOfWeek))")
-                                        .font(.system(size: 13))
+                                    Text("\(workout.exercises.count) exercises · \(dayName(for: workout.dayOfWeek))")
+                                        .font(SteadyType.caption)
                                         .foregroundColor(.atlasTextMuted)
                                 }
                                 Spacer()
                                 Image(systemName: "chevron.right")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.atlasTextMuted)
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(.steadyTextFaint)
                             }
-                            .padding(16)
-                            .background(Color.white.opacity(0.05))
-                            .cornerRadius(12)
+                            .padding(.vertical, 10)
+                            .contentShape(Rectangle())
                         }
-                        .buttonStyle(PlainButtonStyle())
+                        .buttonStyle(.plain)
                     }
                 }
+                .steadyPanel(padding: 14)
             }
         }
     }
@@ -465,35 +461,21 @@ struct WorkoutLogView: View {
     
     private var addExerciseButton: some View {
         Button(action: { showingExercisePicker = true }) {
-            HStack {
-                Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(.atlasPrimary)
-                Text("Add Exercise")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.atlasText)
-                Spacer()
-            }
-            .padding(16)
-            .background(Color.atlasPrimary.opacity(0.1))
-            .cornerRadius(12)
+            Label("Add exercise", systemImage: "plus")
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(SteadySecondaryButtonStyle())
     }
     
     // MARK: - Exercise List with Drag-to-Reorder
     
     private var exerciseListSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("EXERCISES")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(.atlasAccent)
-                    .tracking(2)
+                Text("Exercises").steadySectionHeader()
                 Spacer()
-                Text("Hold & drag to reorder")
-                    .font(.system(size: 11))
-                    .foregroundColor(.atlasTextMuted.opacity(0.6))
+                Text("Hold to reorder")
+                    .font(SteadyType.caption)
+                    .foregroundColor(.steadyTextFaint)
             }
             
             VStack(spacing: 12) {
@@ -537,53 +519,40 @@ struct WorkoutLogView: View {
     
     private var addExerciseSection: some View {
         Button(action: { showingExercisePicker = true }) {
-            HStack {
-                Image(systemName: "plus.circle")
-                    .font(.system(size: 18))
-                Text("Add Exercise")
-                    .font(.system(size: 15, weight: .medium))
-            }
-            .foregroundColor(.atlasPrimary)
-            .padding(12)
-            .frame(maxWidth: .infinity)
-            .background(Color.atlasPrimary.opacity(0.1))
-            .cornerRadius(10)
+            Label("Add exercise", systemImage: "plus")
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(SteadySecondaryButtonStyle())
     }
     
     // MARK: - Global Notes
     
     private var globalNotesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("NOTES")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(.atlasAccent)
-                .tracking(2)
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Notes").steadySectionHeader()
             
             TextEditor(text: $globalNotes)
                 .frame(minHeight: 100)
                 .padding(12)
-                .background(Color.white.opacity(0.05))
-                .cornerRadius(12)
-                .foregroundColor(.atlasText)
-                .font(.system(size: 15))
                 .scrollContentBackground(.hidden)
+                .background(Color.atlasCardDark)
+                .foregroundColor(.atlasText)
+                .font(SteadyType.body)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(Color.steadyHairline, lineWidth: 1)
+                )
                 .overlay(
                     Group {
                         if globalNotes.isEmpty {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Add notes about your workout...")
-                                    .foregroundColor(.atlasTextMuted.opacity(0.6))
-                                Text("• How you felt, energy levels")
-                                    .foregroundColor(.atlasTextMuted.opacity(0.5))
-                                Text("• What to remember next time")
-                                    .foregroundColor(.atlasTextMuted.opacity(0.5))
-                            }
-                            .font(.system(size: 14))
-                            .padding(12)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                            .allowsHitTesting(false)
+                            Text("How it felt, what to change next time")
+                                .font(SteadyType.body)
+                                .foregroundColor(.steadyTextFaint)
+                                .padding(12)
+                                .padding(.leading, 5)
+                                .padding(.top, 8)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                                .allowsHitTesting(false)
                         }
                     }
                 )
@@ -593,22 +562,23 @@ struct WorkoutLogView: View {
     // MARK: - Complete Button
     
     private var completeButton: some View {
-        Button(action: saveWorkout) {
+        let enabled = canSave && !hasCompleted
+        return Button(action: saveWorkout) {
             HStack(spacing: 8) {
                 if isSaving {
                     ProgressView().tint(.atlasBackground)
                 } else {
-                    Image(systemName: "checkmark.circle.fill")
-                    Text("Complete Workout")
+                    Text("Complete workout")
                 }
             }
-            .font(.system(size: 16, weight: .semibold))
-            .foregroundColor(.atlasBackground)
+            .font(SteadyType.bodyEmphasis)
+            .foregroundColor(enabled ? .atlasBackground : .steadyTextFaint)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(canSave && !hasCompleted ? Color.atlasPrimary : Color.gray)
-            .cornerRadius(12)
+            .padding(.vertical, 15)
+            .background(enabled ? Color.atlasPrimary : Color.steadyRaised)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
+        .buttonStyle(.plain)
         .disabled(!canSave || isSaving || hasCompleted)
     }
     
@@ -747,7 +717,7 @@ struct WorkoutLogView: View {
         if isLastSet {
             return CoachingMessage(
                 type: .success,
-                title: "\(exerciseName) done ✓",
+                title: "\(exerciseName) done",
                 message: "All sets complete.",
                 icon: "checkmark.circle.fill",
                 duration: 3.0
@@ -1109,94 +1079,58 @@ struct ExerciseLoggingCard: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 12) {
             // Exercise header with swap/delete actions
-            HStack {
+            HStack(spacing: 8) {
                 Image(systemName: "line.3.horizontal")
-                    .font(.system(size: 16))
-                    .foregroundColor(.atlasTextMuted.opacity(0.5))
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.steadyTextFaint)
                 
                 Text(exercise.name)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(.atlasText)
+                    .lineLimit(2)
                 
-                Spacer()
+                Spacer(minLength: 8)
                 
                 if exercise.hasCompletedSets && exercise.completedVolume > 0 {
                     Text(unitFormatter.displayVolume(exercise.completedVolume))
-                        .font(.system(size: 12, weight: .medium))
+                        .font(SteadyType.metric(12, weight: .medium))
                         .foregroundColor(.atlasTextMuted)
                 }
                 
-                // Swap button
                 if hasAlternatives {
-                    Button(action: { onSwap?() }) {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.atlasPrimary)
-                            .frame(width: 32, height: 32)
-                            .background(Color.atlasPrimary.opacity(0.12))
-                            .cornerRadius(8)
-                    }
-                    .buttonStyle(PlainButtonStyle())
+                    iconButton("arrow.triangle.2.circlepath") { onSwap?() }
                 }
-                
-                // Delete button
-                Button(action: {
-                    showDeleteConfirm = true
-                }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.atlasTextMuted.opacity(0.6))
-                        .frame(width: 28, height: 28)
-                        .background(Color.white.opacity(0.08))
-                        .cornerRadius(6)
-                }
-                .buttonStyle(PlainButtonStyle())
+                iconButton("xmark") { showDeleteConfirm = true }
             }
             
             if !exercise.lastPerformance.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "clock.arrow.circlepath")
-                            .font(.system(size: 11))
-                            .foregroundColor(.atlasTextMuted)
-                        Text("Last: \(exercise.lastPerformance)")
-                            .font(.system(size: 13))
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text("Last").steadyLabel(.steadyTextFaint)
+                        Text(exercise.lastPerformance)
+                            .font(SteadyType.metric(13, weight: .regular))
                             .foregroundColor(.atlasTextMuted)
                     }
-                    
                     if let suggestion = exercise.progressionSuggestion {
-                        HStack(spacing: 6) {
-                            Image(systemName: "arrow.up.right")
-                                .font(.system(size: 11))
-                                .foregroundColor(.atlasAccent)
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text("Next").steadyLabel(.steadyTextFaint)
                             Text(suggestion)
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.atlasAccent)
+                                .foregroundColor(.atlasPrimary)
                         }
                     }
                 }
-                .padding(10)
-                .background(Color.white.opacity(0.05))
-                .cornerRadius(8)
             }
             
             if !exercise.hasHistory {
-                HStack(spacing: 6) {
-                    Image(systemName: "info.circle.fill")
-                        .font(.system(size: 13))
-                        .foregroundColor(.atlasAccent)
-                    Text("First time — start light, find your working weight")
-                        .font(.system(size: 13))
-                        .foregroundColor(.atlasAccent)
-                }
-                .padding(10)
-                .background(Color.atlasAccent.opacity(0.1))
-                .cornerRadius(8)
+                Text("First time logging this. Start light and find your working weight.")
+                    .font(SteadyType.caption)
+                    .foregroundColor(.atlasTextMuted)
             }
             
-            VStack(spacing: 6) {
+            VStack(spacing: 4) {
                 ForEach($exercise.sets.indices, id: \.self) { index in
                     SetLoggingRow(
                         set: $exercise.sets[index],
@@ -1219,43 +1153,35 @@ struct ExerciseLoggingCard: View {
             
             HStack {
                 Button(action: addSet) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 12))
-                        Text("Add Set")
-                            .font(.system(size: 13, weight: .medium))
-                    }
-                    .foregroundColor(.atlasPrimary)
+                    Label("Add set", systemImage: "plus")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.atlasPrimary)
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(.plain)
                 
                 Spacer()
                 
                 if showFillRemaining {
                     Button(action: fillRemainingSets) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "arrow.down.to.line")
-                                .font(.system(size: 12))
-                            Text("Fill Remaining")
-                                .font(.system(size: 13, weight: .medium))
-                        }
-                        .foregroundColor(.atlasPrimary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.atlasPrimary.opacity(0.15))
-                        .cornerRadius(6)
+                        Text("Fill remaining")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.atlasText)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Color.steadyRaised)
+                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(.plain)
                 }
             }
-            .padding(.top, 4)
+            .padding(.top, 2)
         }
-        .padding(16)
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(12)
+        .padding(14)
+        .background(Color.atlasCardDark)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(exercise.hasCompletedSets ? Color.atlasPrimary.opacity(0.4) : Color.clear, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(exercise.hasCompletedSets ? Color.atlasPrimary.opacity(0.35) : Color.steadyHairline, lineWidth: 1)
         )
         .alert("Remove Exercise?", isPresented: $showDeleteConfirm) {
             Button("Remove", role: .destructive) { onDelete?() }
@@ -1265,6 +1191,18 @@ struct ExerciseLoggingCard: View {
                  ? "You have logged sets for \(exercise.name). Removing it will discard that data."
                  : "Remove \(exercise.name) from this workout?")
         }
+    }
+    
+    private func iconButton(_ systemName: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.atlasTextMuted)
+                .frame(width: 30, height: 30)
+                .background(Color.steadyRaised)
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
     
     private var showFillRemaining: Bool {
@@ -1352,25 +1290,23 @@ struct ExerciseSwapSheet: View {
                 VStack(spacing: 0) {
                     // Current exercise header
                     VStack(spacing: 8) {
-                        Text("SWAP EXERCISE")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(.atlasAccent)
-                            .tracking(2)
+                        Text("Swap exercise")
+                            .steadyLabel()
                         
                         Text(exerciseName)
-                            .font(.system(size: 20, weight: .semibold))
+                            .font(SteadyType.title)
                             .foregroundColor(.atlasText)
                         
                         if let def = ExerciseLibrary.find(name: exerciseName) {
-                            Text("\(def.muscleGroup.rawValue) • \(def.category.rawValue)")
-                                .font(.system(size: 14))
+                            Text("\(def.muscleGroup.rawValue) · \(def.category.rawValue)")
+                                .font(SteadyType.caption)
                                 .foregroundColor(.atlasTextMuted)
                         }
                     }
                     .padding(.top, 8)
                     .padding(.bottom, 16)
                     
-                    Divider().background(Color.white.opacity(0.1))
+                    Rectangle().fill(Color.steadyHairline).frame(height: 1)
                     
                     if alternatives.isEmpty {
                         Spacer()
@@ -1406,18 +1342,17 @@ struct ExerciseSwapSheet: View {
                                                 
                                                 Text(alt.equipment)
                                                     .font(.system(size: 12, weight: .medium))
-                                                    .foregroundColor(.atlasAccent)
+                                                    .foregroundColor(.steadyTextFaint)
                                             }
                                             
                                             Spacer()
                                             
-                                            Image(systemName: "arrow.right.circle")
-                                                .font(.system(size: 20))
-                                                .foregroundColor(.atlasPrimary)
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .foregroundColor(.steadyTextFaint)
                                         }
-                                        .padding(16)
-                                        .background(Color.white.opacity(0.05))
-                                        .cornerRadius(12)
+                                        .steadyPanel(padding: 14)
+                                        .contentShape(Rectangle())
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                 }
@@ -1460,8 +1395,8 @@ struct SetLoggingRow: View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
                 Text("\(setNumber + 1)")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(set.isCompleted ? .atlasPrimary : .atlasTextMuted)
+                    .font(SteadyType.metric(14))
+                    .foregroundColor(set.isCompleted ? .atlasText : .steadyTextFaint)
                     .frame(width: 20)
                 
                 if !set.isCompleted {
@@ -1473,51 +1408,62 @@ struct SetLoggingRow: View {
                 Spacer()
                 
                 Button(action: toggleCompletion) {
-                    Image(systemName: set.isCompleted ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 26))
-                        .foregroundColor(set.isCompleted ? .atlasPrimary : .atlasTextMuted.opacity(0.4))
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(set.isCompleted ? Color.atlasPrimary : Color.clear)
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .stroke(set.isCompleted ? Color.atlasPrimary : Color.atlasTextMuted.opacity(0.5), lineWidth: 1.5)
+                        if set.isCompleted {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.atlasBackground)
+                        }
+                    }
+                    .frame(width: 30, height: 30)
+                    .contentShape(Rectangle())
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(.plain)
             }
-            .padding(.vertical, 6)
+            .padding(.vertical, 5)
             .padding(.horizontal, 8)
             .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(set.isCompleted ? Color.atlasPrimary.opacity(0.08) : Color.clear)
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(set.isCompleted ? Color.steadyRaised : Color.clear)
             )
             
             if set.isCompleted && !showRPESelector && set.rpe == nil {
                 Button(action: { withAnimation(.easeInOut(duration: 0.2)) { showRPESelector = true } }) {
                     Text("+ RPE")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.atlasTextMuted.opacity(0.5))
-                        .padding(.top, 2)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.steadyTextFaint)
+                        .padding(.top, 3)
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(.plain)
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .padding(.trailing, 8)
             }
             
             if showRPESelector {
                 rpeSelector
-                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    .transition(.opacity)
             }
             
-            if set.isCompleted && set.rpe != nil && !showRPESelector {
+            if set.isCompleted, let rpe = set.rpe, !showRPESelector {
                 HStack {
                     Spacer()
                     Button(action: { withAnimation { showRPESelector = true } }) {
-                        Text("RPE \(set.rpe!)")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(.atlasAccent)
+                        Text("RPE \(rpe)")
+                            .font(SteadyType.metric(11))
+                            .foregroundColor(.atlasTextMuted)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
-                            .background(Color.atlasAccent.opacity(0.12))
-                            .cornerRadius(4)
+                            .background(Color.steadyRaised)
+                            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(.plain)
                     .padding(.trailing, 8)
                 }
+                .padding(.top, 3)
             }
         }
     }
@@ -1550,10 +1496,11 @@ struct SetLoggingRow: View {
                     .multilineTextAlignment(.center)
                     .frame(width: 50)
                     .padding(.vertical, 8)
-                    .background(Color.white.opacity(0.1))
-                    .cornerRadius(6)
+                    .background(Color.steadyRaised)
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(Color.steadyHairline, lineWidth: 1))
                     .foregroundColor(.atlasText)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(SteadyType.metric(15, weight: .medium))
                 
                 stepperButton(label: "+\(unitFormatter.incrementLabel(weightIncrement))", action: {
                     let lbsIncrement = unitFormatter.weightIncrementInLbs
@@ -1561,14 +1508,14 @@ struct SetLoggingRow: View {
                 })
             } else {
                 Text("BW")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.atlasTextMuted)
                     .frame(width: 30)
             }
             
             Text("×")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(.atlasTextMuted.opacity(0.6))
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.steadyTextFaint)
             
             stepperButton(label: "−1", action: {
                 set.actualReps = max(0, set.actualReps - 1)
@@ -1579,10 +1526,11 @@ struct SetLoggingRow: View {
                 .multilineTextAlignment(.center)
                 .frame(width: 36)
                 .padding(.vertical, 8)
-                .background(Color.white.opacity(0.1))
-                .cornerRadius(6)
+                .background(Color.steadyRaised)
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(Color.steadyHairline, lineWidth: 1))
                 .foregroundColor(.atlasText)
-                .font(.system(size: 15, weight: .medium))
+                .font(SteadyType.metric(15, weight: .medium))
             
             stepperButton(label: "+1", action: {
                 set.actualReps += 1
@@ -1590,31 +1538,38 @@ struct SetLoggingRow: View {
         }
     }
     
+    /// Logged weight in the display unit (stored as lbs), without a trailing ".0".
+    private var completedWeightText: String {
+        let value = unitFormatter.fromLbs(set.actualWeight ?? 0)
+        let rounded = (value * 10).rounded() / 10
+        return rounded == rounded.rounded() ? "\(Int(rounded))" : String(format: "%.1f", rounded)
+    }
+    
     private var completedSetRow: some View {
-        HStack(spacing: 4) {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
             if !isBodyweight {
-                Text("\(Int(set.actualWeight ?? 0))")
-                    .font(.system(size: 15, weight: .medium))
+                Text(completedWeightText)
+                    .font(SteadyType.metric(16))
                     .foregroundColor(.atlasText)
                 Text(unitFormatter.weightUnit)
-                    .font(.system(size: 12))
+                    .font(SteadyType.caption)
                     .foregroundColor(.atlasTextMuted)
             } else {
                 Text("BW")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.atlasTextMuted)
             }
             
             Text("×")
                 .font(.system(size: 14))
-                .foregroundColor(.atlasTextMuted)
+                .foregroundColor(.steadyTextFaint)
             
             Text("\(set.actualReps)")
-                .font(.system(size: 15, weight: .medium))
+                .font(SteadyType.metric(16))
                 .foregroundColor(.atlasText)
             
             Text(isTimed ? "sec" : "reps")
-                .font(.system(size: 12))
+                .font(SteadyType.caption)
                 .foregroundColor(.atlasTextMuted)
         }
     }
@@ -1628,17 +1583,17 @@ struct SetLoggingRow: View {
                 }) {
                     VStack(spacing: 2) {
                         Text("\(rpe)")
-                            .font(.system(size: 14, weight: .bold))
+                            .font(SteadyType.metric(14))
                         Text(rpeLabel(rpe))
-                            .font(.system(size: 9))
+                            .font(.system(size: 9, weight: .medium))
                     }
                     .foregroundColor(set.rpe == rpe ? .atlasBackground : .atlasText)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
-                    .background(set.rpe == rpe ? Color.atlasPrimary : Color.white.opacity(0.08))
-                    .cornerRadius(6)
+                    .background(set.rpe == rpe ? Color.atlasPrimary : Color.steadyRaised)
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(.plain)
             }
         }
         .padding(.horizontal, 8)
@@ -1659,13 +1614,14 @@ struct SetLoggingRow: View {
     private func stepperButton(label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(label)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(.atlasPrimary)
+                .font(SteadyType.metric(12))
+                .foregroundColor(.atlasText)
                 .frame(width: 32, height: 32)
-                .background(Color.atlasPrimary.opacity(0.12))
-                .cornerRadius(6)
+                .background(Color.steadyRaised.opacity(0.6))
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(Color.steadyHairline, lineWidth: 1))
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(.plain)
     }
     
     private func rpeLabel(_ rpe: Int) -> String {
@@ -1730,8 +1686,9 @@ struct ExercisePickerView: View {
                         }
                     }
                     .padding(12)
-                    .background(Color.white.opacity(0.1))
-                    .cornerRadius(10)
+                    .background(Color.steadyRaised)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.steadyHairline, lineWidth: 1))
                     .padding(.horizontal)
                     .padding(.top)
                     
@@ -1763,13 +1720,13 @@ struct ExercisePickerView: View {
                                 showCreateCustom = true
                             } label: {
                                 HStack(spacing: 10) {
-                                    Image(systemName: "plus.circle.fill")
-                                        .font(.system(size: 18))
+                                    Image(systemName: "plus")
+                                        .font(.system(size: 15, weight: .semibold))
                                         .foregroundColor(.atlasPrimary)
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text("Create Custom Exercise")
-                                            .font(.system(size: 15, weight: .medium))
-                                            .foregroundColor(.atlasPrimary)
+                                            .font(SteadyType.bodyEmphasis)
+                                            .foregroundColor(.atlasText)
                                         Text("Add an exercise not in the library")
                                             .font(.system(size: 12))
                                             .foregroundColor(.atlasTextMuted)
@@ -1780,7 +1737,8 @@ struct ExercisePickerView: View {
                                         .foregroundColor(.atlasTextMuted.opacity(0.5))
                                 }
                             }
-                            .listRowBackground(Color.atlasPrimary.opacity(0.08))
+                            .listRowBackground(Color.atlasCardDark)
+                            .listRowSeparatorTint(Color.steadyHairline)
                         }
                         
                         ForEach(filteredExercises) { exercise in
@@ -1834,7 +1792,8 @@ struct ExercisePickerView: View {
                                 }
                             }
                             .disabled(isAlreadyAdded)
-                            .listRowBackground(Color.white.opacity(0.03))
+                            .listRowBackground(Color.atlasBackground)
+                            .listRowSeparatorTint(Color.steadyHairline)
                         }
                     }
                     .listStyle(.plain)
@@ -1861,21 +1820,20 @@ struct ExercisePickerView: View {
         }
     }
     
+    /// Flat filter chip, matching the Lifts list. `icon` is kept for callers but no longer drawn.
     private func groupTab(label: String, icon: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 12))
-                Text(label)
-                    .font(.system(size: 13, weight: .medium))
-            }
-            .foregroundColor(isSelected ? .atlasBackground : .atlasText)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(isSelected ? Color.atlasPrimary : Color.white.opacity(0.08))
-            .cornerRadius(20)
+            Text(label)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(isSelected ? .atlasText : .atlasTextMuted)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(isSelected ? Color.steadyRaised : Color.atlasCardDark)
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(isSelected ? Color.atlasPrimary.opacity(0.6) : Color.steadyHairline, lineWidth: 1))
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(.plain)
     }
 }
 
@@ -1923,7 +1881,7 @@ struct CoachingMessage: Identifiable {
         var color: Color {
             switch self {
             case .success: return .atlasPrimary
-            case .warning: return .orange
+            case .warning: return .atlasAmber
             case .info: return .atlasAccent
             }
         }
@@ -1935,43 +1893,40 @@ struct CoachingMessageCard: View {
     let onDismiss: () -> Void
     
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: message.icon)
-                .font(.system(size: 20))
-                .foregroundColor(message.type.color)
-                .frame(width: 36, height: 36)
-                .background(message.type.color.opacity(0.15))
-                .cornerRadius(8)
+        HStack(alignment: .top, spacing: 10) {
+            Rectangle()
+                .fill(message.type.color)
+                .frame(width: 3)
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(message.title)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(SteadyType.bodyEmphasis)
                     .foregroundColor(.atlasText)
                 Text(message.message)
-                    .font(.system(size: 13))
+                    .font(SteadyType.caption)
                     .foregroundColor(.atlasTextMuted)
                     .fixedSize(horizontal: false, vertical: true)
             }
             
-            Spacer()
+            Spacer(minLength: 8)
             
             Button(action: onDismiss) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.atlasTextMuted)
                     .frame(width: 24, height: 24)
             }
+            .buttonStyle(.plain)
         }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.atlasBackground)
-                .shadow(color: Color.black.opacity(0.2), radius: 15, y: 5)
-        )
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(12)
+        .background(Color.steadyRaised)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(message.type.color.opacity(0.5), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Color.steadyHairline, lineWidth: 1)
         )
+        .shadow(color: .black.opacity(0.35), radius: 10, y: 4)
     }
 }
 
@@ -2119,87 +2074,77 @@ struct RestTimerCard: View {
     private var isComplete: Bool { timer.remainingSeconds == 0 }
     
     var body: some View {
-        VStack(spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("REST")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.atlasAccent)
-                        .tracking(1.5)
-                    Text("Next: \(timer.exerciseName) — Set \(timer.setNumber + 1)")
-                        .font(.system(size: 13))
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(isComplete ? "Rest done" : "Rest")
+                    .steadyLabel(isComplete ? .atlasPrimary : .atlasTextMuted)
+                Spacer()
+                Button(action: onDismiss) {
+                    Text(isComplete ? "Dismiss" : "Skip")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.atlasTextMuted)
+                }
+                .buttonStyle(.plain)
+            }
+            
+            HStack(alignment: .center, spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(timeString(timer.remainingSeconds))
+                        .font(SteadyType.metric(40))
+                        .foregroundColor(isComplete ? .atlasPrimary : .atlasText)
+                    Text("Next: \(timer.exerciseName), set \(timer.setNumber + 1)")
+                        .font(SteadyType.caption)
                         .foregroundColor(.atlasTextMuted)
                         .lineLimit(1)
                 }
-                Spacer()
-                Button(action: onDismiss) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 22))
-                        .foregroundColor(.atlasTextMuted)
-                }
-            }
-            
-            HStack(spacing: 16) {
-                Text(timeString(timer.remainingSeconds))
-                    .font(.system(size: 36, weight: .light, design: .rounded))
-                    .foregroundColor(isComplete ? .atlasPrimary : .atlasText)
-                    .monospacedDigit()
                 
                 Spacer()
                 
                 if !isComplete {
-                    HStack(spacing: 12) {
-                        Button(action: { timer.isRunning ? timer.pause() : timer.resume() }) {
-                            Image(systemName: timer.isRunning ? "pause.fill" : "play.fill")
-                                .font(.system(size: 18))
-                                .foregroundColor(.atlasText)
-                                .frame(width: 40, height: 40)
-                                .background(Color.white.opacity(0.1))
-                                .cornerRadius(8)
-                        }
-                        Button(action: onAddTime) {
-                            Text("+30s")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.atlasText)
-                                .frame(width: 50, height: 40)
-                                .background(Color.white.opacity(0.1))
-                                .cornerRadius(8)
-                        }
+                    Button(action: { timer.isRunning ? timer.pause() : timer.resume() }) {
+                        Image(systemName: timer.isRunning ? "pause.fill" : "play.fill")
+                            .font(.system(size: 15))
+                            .foregroundColor(.atlasText)
+                            .frame(width: 44, height: 40)
+                            .background(Color.atlasCardDark)
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.steadyHairline, lineWidth: 1))
                     }
-                } else {
-                    HStack(spacing: 6) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 18))
-                        Text("Ready!")
-                            .font(.system(size: 15, weight: .semibold))
+                    .buttonStyle(.plain)
+                    
+                    Button(action: onAddTime) {
+                        Text("+30s")
+                            .font(SteadyType.metric(13))
+                            .foregroundColor(.atlasText)
+                            .frame(width: 52, height: 40)
+                            .background(Color.atlasCardDark)
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.steadyHairline, lineWidth: 1))
                     }
-                    .foregroundColor(.atlasPrimary)
+                    .buttonStyle(.plain)
                 }
             }
             
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.white.opacity(0.1))
-                        .frame(height: 6)
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(isComplete ? Color.atlasPrimary : Color.atlasAccent)
-                        .frame(width: geo.size.width * progress, height: 6)
+                    Rectangle().fill(Color.atlasCardDark)
+                    Rectangle()
+                        .fill(Color.atlasPrimary)
+                        .frame(width: geo.size.width * progress)
                         .animation(.linear(duration: 1), value: progress)
                 }
             }
-            .frame(height: 6)
+            .frame(height: 3)
+            .clipShape(RoundedRectangle(cornerRadius: 1.5))
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.atlasBackground)
-                .shadow(color: Color.black.opacity(0.3), radius: 20, y: -5)
-        )
+        .padding(14)
+        .background(Color.steadyRaised)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(isComplete ? Color.atlasPrimary : Color.atlasAccent.opacity(0.5), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(isComplete ? Color.atlasPrimary.opacity(0.6) : Color.steadyHairline, lineWidth: 1)
         )
+        .shadow(color: .black.opacity(0.35), radius: 12, y: 4)
     }
     
     private func timeString(_ seconds: Int) -> String {

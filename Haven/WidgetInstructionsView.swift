@@ -22,7 +22,7 @@ struct WidgetInstructionsView: View {
                         .font(.system(size: 40))
                         .foregroundColor(.atlasAmber)
 
-                    Text("Add the Atlas Widget")
+                    Text("Add the STDY Widget")
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.atlasText)
                 }
@@ -32,7 +32,7 @@ struct WidgetInstructionsView: View {
                     stepRow(number: 1, text: "Go to your Home Screen")
                     stepRow(number: 2, text: "Long press any empty area until apps jiggle")
                     stepRow(number: 3, text: "Tap  +  in the top left corner")
-                    stepRow(number: 4, text: "Search \"Atlas\"")
+                    stepRow(number: 4, text: "Search \"STDY\"")
                     stepRow(number: 5, text: "Choose your size and tap \"Add Widget\"")
                 }
                 .padding(.horizontal, 8)
@@ -61,7 +61,7 @@ struct WidgetInstructionsView: View {
     private func stepRow(number: Int, text: String) -> some View {
         HStack(alignment: .top, spacing: 16) {
             Text("\(number)")
-                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .font(.system(size: 14, weight: .bold).monospacedDigit())
                 .foregroundColor(.atlasBackground)
                 .frame(width: 28, height: 28)
                 .background(Color.atlasAmber)

@@ -40,7 +40,7 @@ struct WorkoutActivityLiveActivity: Widget {
                             .foregroundColor(.teal)
                     } else if context.state.isResting, let endTime = context.state.restTimerEnd, endTime > Date() {
                         Text(timerInterval: Date.now...endTime, countsDown: true)
-                            .font(.system(size: 22, weight: .medium, design: .rounded))
+                            .font(.system(size: 22, weight: .medium).monospacedDigit())
                             .monospacedDigit()
                             .foregroundColor(.teal)
                             .frame(width: 60)
@@ -94,7 +94,7 @@ struct WorkoutActivityLiveActivity: Widget {
                         .foregroundColor(.teal)
                 } else if context.state.isResting, let endTime = context.state.restTimerEnd, endTime > Date() {
                     Text(timerInterval: Date.now...endTime, countsDown: true)
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .font(.system(size: 12, weight: .medium).monospacedDigit())
                         .monospacedDigit()
                         .foregroundColor(.teal)
                         .frame(width: 40)
@@ -144,7 +144,7 @@ struct WorkoutActivityLiveActivity: Widget {
                 Spacer()
                 if let start = context.state.workoutStartTime {
                     Text(timerInterval: start...Date.now, countsDown: false)
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .font(.system(size: 12, weight: .medium).monospacedDigit())
                         .monospacedDigit()
                         .foregroundColor(.white.opacity(0.4))
                 }
@@ -198,7 +198,7 @@ struct WorkoutActivityLiveActivity: Widget {
                 Spacer()
                 if let start = context.state.workoutStartTime {
                     Text(timerInterval: start...Date.now, countsDown: false)
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .font(.system(size: 12, weight: .medium).monospacedDigit())
                         .monospacedDigit()
                         .foregroundColor(.white.opacity(0.4))
                 }
@@ -234,7 +234,7 @@ struct WorkoutActivityLiveActivity: Widget {
                     .foregroundColor(.teal.opacity(0.75))
                 
                 Text(timerInterval: Date.now...endTime, countsDown: true)
-                    .font(.system(size: 28, weight: .light, design: .rounded))
+                    .font(.system(size: 28, weight: .light).monospacedDigit())
                     .monospacedDigit()
                     .foregroundColor(.white)
                 
@@ -301,7 +301,7 @@ struct WorkoutActivityLiveActivity: Widget {
                 Spacer()
                 if let start = context.state.workoutStartTime {
                     Text(timerInterval: start...Date.now, countsDown: false)
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .font(.system(size: 12, weight: .medium).monospacedDigit())
                         .monospacedDigit()
                         .foregroundColor(.white.opacity(0.4))
                 }

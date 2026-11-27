@@ -267,7 +267,7 @@ struct BodyCompView: View {
         Button { showingGoal = true } label: {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("Body fat goal").steadyLabel()
+                    Text("Body fat goal").steadySectionHeader()
                     Spacer()
                     Text(goal == nil ? "Set" : "Edit")
                         .font(SteadyType.caption)
@@ -309,7 +309,7 @@ struct BodyCompView: View {
     private var metabolicAgePanel: some View {
         if let estimate = metabolicAge {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Metabolic age · estimate").steadyLabel()
+                Text("Metabolic age · estimate").steadySectionHeader()
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text("\(estimate.years)")
                         .font(SteadyType.display(40))
@@ -338,7 +338,7 @@ struct BodyCompView: View {
     private var recentPanel: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Recent").steadyLabel()
+                Text("Recent").steadySectionHeader()
                 Spacer()
                 if !entries.isEmpty {
                     NavigationLink {
@@ -371,7 +371,7 @@ struct BodyCompView: View {
     private var photosPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Progress photos").steadyLabel()
+                Text("Progress photos").steadySectionHeader()
                 Spacer()
                 if progressPhotos.count >= 2 {
                     Button("Compare") { showingPhotoComparison = true }

@@ -292,7 +292,7 @@ struct AnalysisStat: View {
     var body: some View {
         VStack(spacing: 4) {
             Text(value)
-                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .font(.system(size: 22, weight: .bold).monospacedDigit())
                 .foregroundColor(color)
 
             Text(label)

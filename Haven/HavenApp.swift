@@ -200,5 +200,6 @@ struct RootView: View {
     private func syncWidgetData() {
         guard userProfile != nil else { return }
         WidgetSync.refresh(modelContext: modelContext, unitFormatter: unitFormatter)
+        WeeklySummary.refresh(modelContext: modelContext, unitFormatter: unitFormatter)
     }
 }

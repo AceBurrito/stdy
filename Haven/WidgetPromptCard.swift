@@ -12,7 +12,7 @@ struct WidgetPromptCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Home screen widget").steadyLabel()
+            Text("Home screen widget").steadySectionHeader()
             Text("See today's recovery state and training without opening the app.")
                 .font(SteadyType.body)
                 .foregroundColor(.atlasText)

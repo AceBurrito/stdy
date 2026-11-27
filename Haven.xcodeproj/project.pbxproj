@@ -400,7 +400,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Haven/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Atlas;
+				INFOPLIST_KEY_CFBundleDisplayName = STDY;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Steadfast uses the camera to take progress photos for tracking your body composition journey.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Steadfast uses Face ID to protect your body composition data.";
@@ -444,7 +444,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Haven/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Atlas;
+				INFOPLIST_KEY_CFBundleDisplayName = STDY;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Steadfast uses the camera to take progress photos for tracking your body composition journey.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Steadfast uses Face ID to protect your body composition data.";

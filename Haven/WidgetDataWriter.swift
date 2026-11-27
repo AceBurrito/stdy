@@ -14,7 +14,11 @@
 //   workoutCompleted   Bool
 //   weightText         String  e.g. "182.4 lbs", "" when unknown
 //   bodyFatText        String  e.g. "18.2%", "" when unknown
-//   weightTrendText    String  e.g. "−1.2 lbs / 7d", "" when unknown
+//   weightTrendText    String  e.g. "−1.2 lbs / 7d", "" when unknown (no longer shown)
+//   recoveryHint       String  short call for the day, e.g. "Keep 2–3 reps in reserve"
+//   signals            [String] e.g. ["HRV −35%", "RHR at avg", "Sleep —"]
+//   exercises          [String] "name\tsets × reps", in plan order
+//   workoutDetail      String  cardio detail, e.g. "30 min · 130–145 bpm"
 
 import Foundation
 import SwiftData
@@ -45,7 +49,11 @@ struct WidgetDataWriter {
         workoutCompleted: Bool,
         weightText: String,
         bodyFatText: String,
-        weightTrendText: String
+        weightTrendText: String,
+        recoveryHint: String = "",
+        signals: [String] = [],
+        exercises: [String] = [],
+        workoutDetail: String = ""
     ) {
         guard let defaults else {
             print("❌ [Widget] updateAll skipped — no shared defaults")
@@ -61,6 +69,10 @@ struct WidgetDataWriter {
         defaults.set(weightText, forKey: "widget_weightText")
         defaults.set(bodyFatText, forKey: "widget_bodyFatText")
         defaults.set(weightTrendText, forKey: "widget_weightTrendText")
+        defaults.set(recoveryHint, forKey: "widget_recoveryHint")
+        defaults.set(signals, forKey: "widget_signals")
+        defaults.set(exercises, forKey: "widget_exercises")
+        defaults.set(workoutDetail, forKey: "widget_workoutDetail")
 
         WidgetCenter.shared.reloadAllTimelines()
         print("✅ [Widget] updateAll — recovery: \(recoveryState?.rawValue ?? "none"), workout: \(workoutName), done: \(workoutCompleted)")
@@ -100,6 +112,20 @@ enum WidgetSync {
 
         let body = BodySnapshot.latest(modelContext: modelContext)
 
+        let exercises: [String] = isRest || workoutType != "strength" ? [] :
+            (plannedDay?.exercises ?? [])
+                .sorted { $0.orderIndex < $1.orderIndex }
+                .map { exercise in
+                    let scheme = exercise.targetReps.map { "\(exercise.targetSets) × \($0)" } ?? "\(exercise.targetSets) sets"
+                    return "\(exercise.name)\t\(scheme)"
+                }
+
+        var detailParts: [String] = []
+        if workoutType == "cardio", let day = plannedDay {
+            if let minutes = day.cardioDuration { detailParts.append("\(minutes) min") }
+            if let low = day.targetHRMin, let high = day.targetHRMax { detailParts.append("\(low)–\(high) bpm") }
+        }
+
         WidgetDataWriter.shared.updateAll(
             recoveryState: recovery?.state,
             workoutName: isRest ? "Rest Day" : (plannedDay?.dayName ?? "Rest Day"),
@@ -109,7 +135,21 @@ enum WidgetSync {
             workoutCompleted: completed,
             weightText: body.weight.map { unitFormatter.displayWeight($0) } ?? "",
             bodyFatText: body.bodyFatPercent.map { String(format: "%.1f%%", $0 * 100) } ?? "",
-            weightTrendText: body.weeklyChangeText(unitFormatter: unitFormatter) ?? ""
+            weightTrendText: body.weeklyChangeText(unitFormatter: unitFormatter) ?? "",
+            recoveryHint: recovery?.state.widgetHint ?? "Wear your watch overnight",
+            signals: recovery.map(signalTexts) ?? [],
+            exercises: exercises,
+            workoutDetail: detailParts.joined(separator: " · ")
         )
+    }
+
+    /// One short line per recovery input, e.g. "HRV −35%", "RHR at avg", "Sleep 7.2h".
+    private static func signalTexts(_ assessment: RecoveryAssessment) -> [String] {
+        [RecoveryComponent.Kind.hrv, .rhr, .sleep].map { kind in
+            guard let component = assessment.component(kind) else { return "\(kind.shortLabel) —" }
+            if kind == .sleep { return "Sleep \(component.valueText)" }
+            let delta = (component.deltaText ?? component.valueText).replacingOccurrences(of: " vs avg", with: "")
+            return "\(kind.shortLabel) \(delta)"
+        }
     }
 }

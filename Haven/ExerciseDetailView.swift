@@ -143,7 +143,7 @@ struct ExerciseDetailView: View {
         let mostReps = history.points.max { $0.bestReps < $1.bestReps }
 
         return VStack(alignment: .leading, spacing: 0) {
-            Text("Records").steadyLabel().padding(.bottom, 8)
+            Text("Records").steadySectionHeader().padding(.bottom, 8)
             if let p = bestE1RM, let v = p.e1rm {
                 recordRow("Best e1RM", unitFormatter.displayWeightInt(v), p.date)
             }
@@ -181,7 +181,7 @@ struct ExerciseDetailView: View {
 
     private func sessionsPanel(_ history: LiftHistory) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Sessions").steadyLabel().padding(.bottom, 8)
+            Text("Sessions").steadySectionHeader().padding(.bottom, 8)
             ForEach(Array(history.points.reversed().enumerated()), id: \.element.id) { index, point in
                 if index > 0 { Rectangle().fill(Color.steadyHairline).frame(height: 1) }
                 VStack(alignment: .leading, spacing: 4) {

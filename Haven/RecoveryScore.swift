@@ -53,6 +53,16 @@ enum RecoveryState: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Very short call for the home screen widget.
+    var widgetHint: String {
+        switch self {
+        case .readyToCrush: return "Go heavy today"
+        case .goodToGo: return "Train as planned"
+        case .manageIt: return "Keep 2–3 reps in reserve"
+        case .recover: return "Walk, stretch or rest"
+        }
+    }
+
     /// Short note shown on the training card when the day isn't green or teal.
     var trainingAdjustment: String? {
         switch self {

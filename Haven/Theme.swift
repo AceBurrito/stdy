@@ -21,9 +21,9 @@ extension Color {
 
     // Surfaces: three clearly separated graphite steps
     static let atlasBackground = Color(hex: "#0F1011")   // Base (was #1C1C1E)
-    static let atlasCardDark = Color(hex: "#1A1C1E")     // Panel (was #1F1F23)
-    static let steadyRaised = Color(hex: "#25282B")      // Raised control / selected row
-    static let steadyHairline = Color.white.opacity(0.08)
+    static let atlasCardDark = Color(hex: "#1D2023")     // Panel, a clear step up from base
+    static let steadyRaised = Color(hex: "#292D31")      // Raised control / selected row
+    static let steadyHairline = Color.white.opacity(0.10)
 
     // Text
     static let atlasText = Color(hex: "#F2F1EE")         // Warm white
@@ -88,6 +88,15 @@ extension View {
             .tracking(1.4)
             .textCase(.uppercase)
             .foregroundColor(color)
+    }
+
+    /// Section title at the top of a panel: one step brighter than the labels
+    /// inside it, so "BODY" reads above "WEIGHT". Never colored.
+    func steadySectionHeader() -> some View {
+        self.font(.system(size: 12, weight: .bold))
+            .tracking(1.4)
+            .textCase(.uppercase)
+            .foregroundColor(.atlasText.opacity(0.88))
     }
 
     /// Standard panel: flat graphite fill with a hairline edge.

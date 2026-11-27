@@ -75,7 +75,7 @@ struct TrainingDayPanel: View {
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Today's training").steadyLabel()
+                Text("Today's training").steadySectionHeader()
                 Text(dayName)
                     .font(SteadyType.title)
                     .foregroundColor(.atlasText)
