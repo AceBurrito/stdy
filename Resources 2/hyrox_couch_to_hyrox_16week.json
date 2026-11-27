@@ -1,0 +1,29 @@
+{
+  "eventType": "hyrox",
+  "experienceLevel": "couch_to_event",
+  "weekDuration": 16,
+  "minRunningCapability": "cannot_run_10min",
+  "maxRunningCapability": "20_30min",
+  "requiresRecentRace": false,
+  "requiresStrengthBase": false,
+  "description": "16-week plan for beginners building both running endurance and functional fitness from scratch.",
+  "phases": {
+    "base": [
+      1,
+      8
+    ],
+    "build": [
+      9,
+      12
+    ],
+    "peak": [
+      13,
+      15
+    ],
+    "taper": [
+      16,
+      16
+    ]
+  },
+  "weeks": []
+}

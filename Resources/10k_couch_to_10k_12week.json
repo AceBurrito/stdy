@@ -1,0 +1,2160 @@
+{
+  "eventType": "10k",
+  "experienceLevel": "couch_to_event",
+  "weekDuration": 12,
+  "minRunningCapability": "cannot_run_10min",
+  "maxRunningCapability": "20_30min",
+  "requiresRecentRace": false,
+  "requiresStrengthBase": false,
+  "description": "12-week plan building from basic fitness to completing a 10K.",
+  "phases": {
+    "base": [
+      1,
+      6
+    ],
+    "build": [
+      7,
+      10
+    ],
+    "peak": [
+      11,
+      11
+    ],
+    "taper": [
+      12,
+      12
+    ]
+  },
+  "weeks": [
+    {
+      "weekNumber": 1,
+      "weekGoal": "Introduction to run/walk intervals - build base fitness",
+      "totalWeeklyVolume": "60-90 minutes",
+      "keyWorkouts": "3x run/walk sessions, 2x strength",
+      "days": [
+        {
+          "dayOfWeek": 0,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 1,
+          "dayType": "cardio",
+          "dayName": "Run/Walk Intervals",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 20,
+          "cardioNotes": "8 rounds of: 1 min jog, 2 min walk. Focus on easy, conversational jogging pace.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 1.5,
+          "distanceUnit": "miles",
+          "targetPace": "11:30-12:30",
+          "workoutStructure": "intervals",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 2,
+          "dayType": "strength",
+          "dayName": "Running Strength",
+          "exercises": [
+            {
+              "name": "Bodyweight Squat",
+              "targetSets": 2,
+              "targetReps": 12,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Focus on depth and control, keep chest up"
+            },
+            {
+              "name": "Pushup (knees OK)",
+              "targetSets": 2,
+              "targetReps": 10,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Modify to knees if needed, maintain straight line"
+            },
+            {
+              "name": "Reverse Lunge",
+              "targetSets": 2,
+              "targetReps": 10,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Each leg, focus on balance and control"
+            },
+            {
+              "name": "Plank",
+              "targetSets": 2,
+              "targetReps": 30,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "30 seconds each set, maintain neutral spine"
+            }
+          ],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 3,
+          "dayType": "cardio",
+          "dayName": "Run/Walk Intervals",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 20,
+          "cardioNotes": "8 rounds of: 1 min jog, 2 min walk. Same as Monday, focus on consistency.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 1.5,
+          "distanceUnit": "miles",
+          "targetPace": "11:30-12:30",
+          "workoutStructure": "intervals",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 4,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 5,
+          "dayType": "cardio",
+          "dayName": "Run/Walk Intervals",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 20,
+          "cardioNotes": "8 rounds of: 1 min jog, 2 min walk. End of week 1 - you should feel stronger!",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 1.5,
+          "distanceUnit": "miles",
+          "targetPace": "11:30-12:30",
+          "workoutStructure": "intervals",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 6,
+          "dayType": "strength",
+          "dayName": "Running Strength",
+          "exercises": [
+            {
+              "name": "Bodyweight Squat",
+              "targetSets": 2,
+              "targetReps": 12,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Focus on depth and control, keep chest up"
+            },
+            {
+              "name": "Pushup (knees OK)",
+              "targetSets": 2,
+              "targetReps": 10,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Modify to knees if needed, maintain straight line"
+            },
+            {
+              "name": "Reverse Lunge",
+              "targetSets": 2,
+              "targetReps": 10,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Each leg, focus on balance and control"
+            },
+            {
+              "name": "Plank",
+              "targetSets": 2,
+              "targetReps": 30,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "30 seconds each set, maintain neutral spine"
+            }
+          ],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        }
+      ]
+    },
+    {
+      "weekNumber": 2,
+      "weekGoal": "Increase running intervals - build aerobic capacity",
+      "totalWeeklyVolume": "75-100 minutes",
+      "keyWorkouts": "3x run/walk sessions, 2x strength",
+      "days": [
+        {
+          "dayOfWeek": 0,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 1,
+          "dayType": "cardio",
+          "dayName": "Run/Walk Intervals",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 22,
+          "cardioNotes": "6 rounds of: 90 sec jog, 2 min walk. Longer running intervals this week.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 1.75,
+          "distanceUnit": "miles",
+          "targetPace": "11:30-12:30",
+          "workoutStructure": "intervals",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 2,
+          "dayType": "strength",
+          "dayName": "Running Strength",
+          "exercises": [
+            {
+              "name": "Bodyweight Squat",
+              "targetSets": 2,
+              "targetReps": 12,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Focus on depth and control, keep chest up"
+            },
+            {
+              "name": "Pushup (knees OK)",
+              "targetSets": 2,
+              "targetReps": 10,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Modify to knees if needed, maintain straight line"
+            },
+            {
+              "name": "Reverse Lunge",
+              "targetSets": 2,
+              "targetReps": 10,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Each leg, focus on balance and control"
+            },
+            {
+              "name": "Plank",
+              "targetSets": 3,
+              "targetReps": 30,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "30 seconds each set"
+            },
+            {
+              "name": "Glute Bridge",
+              "targetSets": 2,
+              "targetReps": 15,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Squeeze glutes at top, hold 2 seconds"
+            }
+          ],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 3,
+          "dayType": "cardio",
+          "dayName": "Run/Walk Intervals",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 22,
+          "cardioNotes": "6 rounds of: 90 sec jog, 2 min walk. Keep pace conversational.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 1.75,
+          "distanceUnit": "miles",
+          "targetPace": "11:30-12:30",
+          "workoutStructure": "intervals",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 4,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 5,
+          "dayType": "cardio",
+          "dayName": "Run/Walk Intervals",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 22,
+          "cardioNotes": "6 rounds of: 90 sec jog, 2 min walk. Notice how much easier this feels than week 1!",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 1.75,
+          "distanceUnit": "miles",
+          "targetPace": "11:30-12:30",
+          "workoutStructure": "intervals",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 6,
+          "dayType": "strength",
+          "dayName": "Running Strength",
+          "exercises": [
+            {
+              "name": "Bodyweight Squat",
+              "targetSets": 2,
+              "targetReps": 12,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Focus on depth and control, keep chest up"
+            },
+            {
+              "name": "Pushup (knees OK)",
+              "targetSets": 2,
+              "targetReps": 10,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Modify to knees if needed, maintain straight line"
+            },
+            {
+              "name": "Reverse Lunge",
+              "targetSets": 2,
+              "targetReps": 10,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Each leg, focus on balance and control"
+            },
+            {
+              "name": "Plank",
+              "targetSets": 3,
+              "targetReps": 30,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "30 seconds each set"
+            },
+            {
+              "name": "Glute Bridge",
+              "targetSets": 2,
+              "targetReps": 15,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Squeeze glutes at top, hold 2 seconds"
+            }
+          ],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        }
+      ]
+    },
+    {
+      "weekNumber": 3,
+      "weekGoal": "Further progression - 2 minute running intervals",
+      "totalWeeklyVolume": "85-110 minutes",
+      "keyWorkouts": "3x run/walk sessions, 2x strength",
+      "days": [
+        {
+          "dayOfWeek": 0,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 1,
+          "dayType": "cardio",
+          "dayName": "Run/Walk Intervals",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 25,
+          "cardioNotes": "5 rounds of: 2 min jog, 2 min walk. Equal work and rest - building endurance.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 2.0,
+          "distanceUnit": "miles",
+          "targetPace": "11:00-12:00",
+          "workoutStructure": "intervals",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 2,
+          "dayType": "strength",
+          "dayName": "Running Strength",
+          "exercises": [
+            {
+              "name": "Goblet Squat",
+              "targetSets": 3,
+              "targetReps": 12,
+              "isBodyweight": false,
+              "equipmentNeeded": "dumbbell or kettlebell",
+              "notes": "Use light weight (10-15 lbs), focus on depth"
+            },
+            {
+              "name": "Pushup",
+              "targetSets": 3,
+              "targetReps": 12,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "From toes if possible, knees OK"
+            },
+            {
+              "name": "Bulgarian Split Squat",
+              "targetSets": 3,
+              "targetReps": 8,
+              "isBodyweight": true,
+              "equipmentNeeded": "bench or chair",
+              "notes": "Each leg, rear foot elevated"
+            },
+            {
+              "name": "Plank",
+              "targetSets": 3,
+              "targetReps": 40,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "40 seconds each set"
+            },
+            {
+              "name": "Single Leg Glute Bridge",
+              "targetSets": 2,
+              "targetReps": 10,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Each leg, challenge balance"
+            }
+          ],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 3,
+          "dayType": "cardio",
+          "dayName": "Run/Walk Intervals",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 25,
+          "cardioNotes": "5 rounds of: 2 min jog, 2 min walk. Keep it controlled and conversational.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 2.0,
+          "distanceUnit": "miles",
+          "targetPace": "11:00-12:00",
+          "workoutStructure": "intervals",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 4,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 5,
+          "dayType": "cardio",
+          "dayName": "Run/Walk Intervals",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 25,
+          "cardioNotes": "5 rounds of: 2 min jog, 2 min walk. Halfway through base phase!",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 2.0,
+          "distanceUnit": "miles",
+          "targetPace": "11:00-12:00",
+          "workoutStructure": "intervals",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 6,
+          "dayType": "strength",
+          "dayName": "Running Strength",
+          "exercises": [
+            {
+              "name": "Goblet Squat",
+              "targetSets": 3,
+              "targetReps": 12,
+              "isBodyweight": false,
+              "equipmentNeeded": "dumbbell or kettlebell",
+              "notes": "Use light weight (10-15 lbs), focus on depth"
+            },
+            {
+              "name": "Pushup",
+              "targetSets": 3,
+              "targetReps": 12,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "From toes if possible, knees OK"
+            },
+            {
+              "name": "Bulgarian Split Squat",
+              "targetSets": 3,
+              "targetReps": 8,
+              "isBodyweight": true,
+              "equipmentNeeded": "bench or chair",
+              "notes": "Each leg, rear foot elevated"
+            },
+            {
+              "name": "Plank",
+              "targetSets": 3,
+              "targetReps": 40,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "40 seconds each set"
+            },
+            {
+              "name": "Single Leg Glute Bridge",
+              "targetSets": 2,
+              "targetReps": 10,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Each leg, challenge balance"
+            }
+          ],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        }
+      ]
+    },
+    {
+      "weekNumber": 4,
+      "weekGoal": "Recovery week - consolidate gains before progression",
+      "totalWeeklyVolume": "70-90 minutes",
+      "keyWorkouts": "3x easier run/walk, 2x lighter strength",
+      "days": [
+        {
+          "dayOfWeek": 0,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 1,
+          "dayType": "cardio",
+          "dayName": "Run/Walk - Recovery",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 20,
+          "cardioNotes": "6 rounds of: 90 sec jog, 2 min walk. Easier week to recover and adapt.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 1.75,
+          "distanceUnit": "miles",
+          "targetPace": "11:30-12:30",
+          "workoutStructure": "intervals",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 2,
+          "dayType": "strength",
+          "dayName": "Running Strength",
+          "exercises": [
+            {
+              "name": "Bodyweight Squat",
+              "targetSets": 2,
+              "targetReps": 15,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Light week, focus on quality"
+            },
+            {
+              "name": "Pushup",
+              "targetSets": 2,
+              "targetReps": 12,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Recovery week, maintain form"
+            },
+            {
+              "name": "Walking Lunge",
+              "targetSets": 2,
+              "targetReps": 20,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Total steps, focus on balance"
+            },
+            {
+              "name": "Plank",
+              "targetSets": 2,
+              "targetReps": 30,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "30 seconds, recovery week"
+            }
+          ],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 3,
+          "dayType": "cardio",
+          "dayName": "Run/Walk - Recovery",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 20,
+          "cardioNotes": "6 rounds of: 90 sec jog, 2 min walk. Enjoy this lighter week.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 1.75,
+          "distanceUnit": "miles",
+          "targetPace": "11:30-12:30",
+          "workoutStructure": "intervals",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 4,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 5,
+          "dayType": "cardio",
+          "dayName": "Run/Walk - Recovery",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 20,
+          "cardioNotes": "6 rounds of: 90 sec jog, 2 min walk. Ready for continuous running next!",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 1.75,
+          "distanceUnit": "miles",
+          "targetPace": "11:30-12:30",
+          "workoutStructure": "intervals",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 6,
+          "dayType": "strength",
+          "dayName": "Running Strength",
+          "exercises": [
+            {
+              "name": "Bodyweight Squat",
+              "targetSets": 2,
+              "targetReps": 15,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Light week, focus on quality"
+            },
+            {
+              "name": "Pushup",
+              "targetSets": 2,
+              "targetReps": 12,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Recovery week, maintain form"
+            },
+            {
+              "name": "Walking Lunge",
+              "targetSets": 2,
+              "targetReps": 20,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Total steps, focus on balance"
+            },
+            {
+              "name": "Plank",
+              "targetSets": 2,
+              "targetReps": 30,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "30 seconds, recovery week"
+            }
+          ],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        }
+      ]
+    },
+    {
+      "weekNumber": 5,
+      "weekGoal": "Building continuous running - reduce walk breaks",
+      "totalWeeklyVolume": "90-115 minutes",
+      "keyWorkouts": "3x run sessions with short walk breaks, 2x strength",
+      "days": [
+        {
+          "dayOfWeek": 0,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 1,
+          "dayType": "cardio",
+          "dayName": "Run with Short Breaks",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 28,
+          "cardioNotes": "4 rounds of: 5 min jog, 1 min walk. Longer running intervals now!",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 2.25,
+          "distanceUnit": "miles",
+          "targetPace": "11:00-12:00",
+          "workoutStructure": "intervals",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 2,
+          "dayType": "strength",
+          "dayName": "Running Strength",
+          "exercises": [
+            {
+              "name": "Goblet Squat",
+              "targetSets": 3,
+              "targetReps": 12,
+              "isBodyweight": false,
+              "equipmentNeeded": "dumbbell or kettlebell",
+              "notes": "Moderate weight, 15-20 lbs"
+            },
+            {
+              "name": "Romanian Deadlift",
+              "targetSets": 3,
+              "targetReps": 10,
+              "isBodyweight": false,
+              "equipmentNeeded": "dumbbells",
+              "notes": "Light weight, focus on hamstrings"
+            },
+            {
+              "name": "Step-up",
+              "targetSets": 3,
+              "targetReps": 10,
+              "isBodyweight": true,
+              "equipmentNeeded": "bench or box",
+              "notes": "Each leg, drive through heel"
+            },
+            {
+              "name": "Side Plank",
+              "targetSets": 3,
+              "targetReps": 30,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "30 seconds each side"
+            },
+            {
+              "name": "Calf Raise",
+              "targetSets": 3,
+              "targetReps": 15,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Slow and controlled"
+            }
+          ],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 3,
+          "dayType": "cardio",
+          "dayName": "Run with Short Breaks",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 28,
+          "cardioNotes": "4 rounds of: 5 min jog, 1 min walk. Keep pace easy and sustainable.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 2.25,
+          "distanceUnit": "miles",
+          "targetPace": "11:00-12:00",
+          "workoutStructure": "intervals",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 4,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 5,
+          "dayType": "cardio",
+          "dayName": "Run with Short Breaks",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 28,
+          "cardioNotes": "4 rounds of: 5 min jog, 1 min walk. You're running more than walking now!",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 2.25,
+          "distanceUnit": "miles",
+          "targetPace": "11:00-12:00",
+          "workoutStructure": "intervals",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 6,
+          "dayType": "strength",
+          "dayName": "Running Strength",
+          "exercises": [
+            {
+              "name": "Goblet Squat",
+              "targetSets": 3,
+              "targetReps": 12,
+              "isBodyweight": false,
+              "equipmentNeeded": "dumbbell or kettlebell",
+              "notes": "Moderate weight, 15-20 lbs"
+            },
+            {
+              "name": "Romanian Deadlift",
+              "targetSets": 3,
+              "targetReps": 10,
+              "isBodyweight": false,
+              "equipmentNeeded": "dumbbells",
+              "notes": "Light weight, focus on hamstrings"
+            },
+            {
+              "name": "Step-up",
+              "targetSets": 3,
+              "targetReps": 10,
+              "isBodyweight": true,
+              "equipmentNeeded": "bench or box",
+              "notes": "Each leg, drive through heel"
+            },
+            {
+              "name": "Side Plank",
+              "targetSets": 3,
+              "targetReps": 30,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "30 seconds each side"
+            },
+            {
+              "name": "Calf Raise",
+              "targetSets": 3,
+              "targetReps": 15,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Slow and controlled"
+            }
+          ],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        }
+      ]
+    },
+    {
+      "weekNumber": 6,
+      "weekGoal": "Continuous running milestone - 30 minutes straight",
+      "totalWeeklyVolume": "100-120 minutes",
+      "keyWorkouts": "3x continuous runs, 2x strength",
+      "days": [
+        {
+          "dayOfWeek": 0,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 1,
+          "dayType": "cardio",
+          "dayName": "Continuous Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 20,
+          "cardioNotes": "20 minute continuous run. No walk breaks! Keep it easy and conversational.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 1.75,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 2,
+          "dayType": "strength",
+          "dayName": "Running Strength",
+          "exercises": [
+            {
+              "name": "Goblet Squat",
+              "targetSets": 3,
+              "targetReps": 12,
+              "isBodyweight": false,
+              "equipmentNeeded": "dumbbell or kettlebell",
+              "notes": "Moderate weight, 15-20 lbs"
+            },
+            {
+              "name": "Romanian Deadlift",
+              "targetSets": 3,
+              "targetReps": 10,
+              "isBodyweight": false,
+              "equipmentNeeded": "dumbbells",
+              "notes": "Light weight, focus on hamstrings"
+            },
+            {
+              "name": "Step-up",
+              "targetSets": 3,
+              "targetReps": 10,
+              "isBodyweight": true,
+              "equipmentNeeded": "bench or box",
+              "notes": "Each leg, drive through heel"
+            },
+            {
+              "name": "Side Plank",
+              "targetSets": 3,
+              "targetReps": 30,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "30 seconds each side"
+            },
+            {
+              "name": "Calf Raise",
+              "targetSets": 3,
+              "targetReps": 15,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Slow and controlled"
+            }
+          ],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 3,
+          "dayType": "cardio",
+          "dayName": "Continuous Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 25,
+          "cardioNotes": "25 minute continuous run. Building endurance steadily.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 2.25,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 4,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 5,
+          "dayType": "cardio",
+          "dayName": "Continuous Run - 30 Minutes!",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 30,
+          "cardioNotes": "30 minute continuous run! Major milestone - you can run for 30 minutes straight! Base phase complete.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 2.75,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 6,
+          "dayType": "strength",
+          "dayName": "Running Strength",
+          "exercises": [
+            {
+              "name": "Goblet Squat",
+              "targetSets": 3,
+              "targetReps": 12,
+              "isBodyweight": false,
+              "equipmentNeeded": "dumbbell or kettlebell",
+              "notes": "Moderate weight, 15-20 lbs"
+            },
+            {
+              "name": "Romanian Deadlift",
+              "targetSets": 3,
+              "targetReps": 10,
+              "isBodyweight": false,
+              "equipmentNeeded": "dumbbells",
+              "notes": "Light weight, focus on hamstrings"
+            },
+            {
+              "name": "Step-up",
+              "targetSets": 3,
+              "targetReps": 10,
+              "isBodyweight": true,
+              "equipmentNeeded": "bench or box",
+              "notes": "Each leg, drive through heel"
+            },
+            {
+              "name": "Side Plank",
+              "targetSets": 3,
+              "targetReps": 30,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "30 seconds each side"
+            },
+            {
+              "name": "Calf Raise",
+              "targetSets": 3,
+              "targetReps": 15,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Slow and controlled"
+            }
+          ],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        }
+      ]
+    },
+    {
+      "weekNumber": 7,
+      "weekGoal": "Build distance - progress toward 10K",
+      "totalWeeklyVolume": "120-140 minutes",
+      "keyWorkouts": "3x longer continuous runs, 2x strength",
+      "days": [
+        {
+          "dayOfWeek": 0,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 1,
+          "dayType": "cardio",
+          "dayName": "Easy Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 30,
+          "cardioNotes": "30 minute easy run. Conversational pace.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 2.75,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 2,
+          "dayType": "strength",
+          "dayName": "Running Strength",
+          "exercises": [
+            {
+              "name": "Goblet Squat",
+              "targetSets": 3,
+              "targetReps": 12,
+              "isBodyweight": false,
+              "equipmentNeeded": "dumbbell or kettlebell",
+              "notes": "Moderate weight, 15-20 lbs"
+            },
+            {
+              "name": "Romanian Deadlift",
+              "targetSets": 3,
+              "targetReps": 10,
+              "isBodyweight": false,
+              "equipmentNeeded": "dumbbells",
+              "notes": "Light weight, focus on hamstrings"
+            },
+            {
+              "name": "Step-up",
+              "targetSets": 3,
+              "targetReps": 10,
+              "isBodyweight": true,
+              "equipmentNeeded": "bench or box",
+              "notes": "Each leg, drive through heel"
+            },
+            {
+              "name": "Side Plank",
+              "targetSets": 3,
+              "targetReps": 30,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "30 seconds each side"
+            },
+            {
+              "name": "Calf Raise",
+              "targetSets": 3,
+              "targetReps": 15,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Slow and controlled"
+            }
+          ],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 3,
+          "dayType": "cardio",
+          "dayName": "Moderate Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 35,
+          "cardioNotes": "35 minute run. Start easy, last 10 min at moderate effort.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 3.25,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "progressive",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 4,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 5,
+          "dayType": "cardio",
+          "dayName": "Easy Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 30,
+          "cardioNotes": "30 minute easy run. Recovery-paced.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 2.75,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 6,
+          "dayType": "cardio",
+          "dayName": "Long Run - 4 Miles",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 45,
+          "cardioNotes": "45 minute long run covering ~4 miles. Easy conversational pace throughout.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 4.0,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        }
+      ]
+    },
+    {
+      "weekNumber": 8,
+      "weekGoal": "Continue distance progression",
+      "totalWeeklyVolume": "140-160 minutes",
+      "keyWorkouts": "3x runs building distance, 2x strength",
+      "days": [
+        {
+          "dayOfWeek": 0,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 1,
+          "dayType": "cardio",
+          "dayName": "Easy Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 35,
+          "cardioNotes": "35 minute easy run. Keep it conversational.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 3.25,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 2,
+          "dayType": "strength",
+          "dayName": "Running Strength",
+          "exercises": [
+            {
+              "name": "Goblet Squat",
+              "targetSets": 3,
+              "targetReps": 12,
+              "isBodyweight": false,
+              "equipmentNeeded": "dumbbell or kettlebell",
+              "notes": "Moderate weight, 15-20 lbs"
+            },
+            {
+              "name": "Romanian Deadlift",
+              "targetSets": 3,
+              "targetReps": 10,
+              "isBodyweight": false,
+              "equipmentNeeded": "dumbbells",
+              "notes": "Light weight, focus on hamstrings"
+            },
+            {
+              "name": "Step-up",
+              "targetSets": 3,
+              "targetReps": 10,
+              "isBodyweight": true,
+              "equipmentNeeded": "bench or box",
+              "notes": "Each leg, drive through heel"
+            },
+            {
+              "name": "Side Plank",
+              "targetSets": 3,
+              "targetReps": 30,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "30 seconds each side"
+            },
+            {
+              "name": "Calf Raise",
+              "targetSets": 3,
+              "targetReps": 15,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Slow and controlled"
+            }
+          ],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 3,
+          "dayType": "cardio",
+          "dayName": "Progressive Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 40,
+          "cardioNotes": "40 minute run. First 30 min easy, last 10 min at moderate effort.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 3.75,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "progressive",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 4,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 5,
+          "dayType": "cardio",
+          "dayName": "Easy Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 30,
+          "cardioNotes": "30 minute easy recovery run.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 2.75,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 6,
+          "dayType": "cardio",
+          "dayName": "Long Run - 5 Miles",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 55,
+          "cardioNotes": "55 minute long run covering ~5 miles. You're getting close to 10K distance!",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 5.0,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        }
+      ]
+    },
+    {
+      "weekNumber": 9,
+      "weekGoal": "Recovery week before final push",
+      "totalWeeklyVolume": "110-130 minutes",
+      "keyWorkouts": "3x moderate runs, 2x lighter strength",
+      "days": [
+        {
+          "dayOfWeek": 0,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 1,
+          "dayType": "cardio",
+          "dayName": "Easy Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 30,
+          "cardioNotes": "30 minute easy run. Recovery week - keep it light.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 2.75,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 2,
+          "dayType": "strength",
+          "dayName": "Running Strength",
+          "exercises": [
+            {
+              "name": "Bodyweight Squat",
+              "targetSets": 2,
+              "targetReps": 15,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Light week, focus on quality"
+            },
+            {
+              "name": "Pushup",
+              "targetSets": 2,
+              "targetReps": 12,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Recovery week, maintain form"
+            },
+            {
+              "name": "Walking Lunge",
+              "targetSets": 2,
+              "targetReps": 20,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Total steps, focus on balance"
+            },
+            {
+              "name": "Plank",
+              "targetSets": 2,
+              "targetReps": 30,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "30 seconds, recovery week"
+            }
+          ],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 3,
+          "dayType": "cardio",
+          "dayName": "Easy Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 30,
+          "cardioNotes": "30 minute easy run. Enjoy the lighter week.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 2.75,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 4,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 5,
+          "dayType": "cardio",
+          "dayName": "Easy Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 25,
+          "cardioNotes": "25 minute easy run. Absorb the training.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 2.25,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 6,
+          "dayType": "cardio",
+          "dayName": "Moderate Long Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 45,
+          "cardioNotes": "45 minute long run. Easy conversational pace. Recovery week.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 4.0,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        }
+      ]
+    },
+    {
+      "weekNumber": 10,
+      "weekGoal": "Build to 6+ mile long run",
+      "totalWeeklyVolume": "150-170 minutes",
+      "keyWorkouts": "3x runs, peak long run approaching 10K",
+      "days": [
+        {
+          "dayOfWeek": 0,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 1,
+          "dayType": "cardio",
+          "dayName": "Easy Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 35,
+          "cardioNotes": "35 minute easy run. Build back up after recovery week.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 3.25,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 2,
+          "dayType": "strength",
+          "dayName": "Running Strength",
+          "exercises": [
+            {
+              "name": "Goblet Squat",
+              "targetSets": 3,
+              "targetReps": 12,
+              "isBodyweight": false,
+              "equipmentNeeded": "dumbbell or kettlebell",
+              "notes": "Moderate weight, 15-20 lbs"
+            },
+            {
+              "name": "Romanian Deadlift",
+              "targetSets": 3,
+              "targetReps": 10,
+              "isBodyweight": false,
+              "equipmentNeeded": "dumbbells",
+              "notes": "Light weight, focus on hamstrings"
+            },
+            {
+              "name": "Step-up",
+              "targetSets": 3,
+              "targetReps": 10,
+              "isBodyweight": true,
+              "equipmentNeeded": "bench or box",
+              "notes": "Each leg, drive through heel"
+            },
+            {
+              "name": "Side Plank",
+              "targetSets": 3,
+              "targetReps": 30,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "30 seconds each side"
+            },
+            {
+              "name": "Calf Raise",
+              "targetSets": 3,
+              "targetReps": 15,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Slow and controlled"
+            }
+          ],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 3,
+          "dayType": "cardio",
+          "dayName": "Progressive Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 40,
+          "cardioNotes": "40 minute run. First 30 min easy, last 10 min at moderate-hard effort.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 3.75,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "progressive",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 4,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 5,
+          "dayType": "cardio",
+          "dayName": "Easy Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 30,
+          "cardioNotes": "30 minute easy recovery run.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 2.75,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 6,
+          "dayType": "cardio",
+          "dayName": "Long Run - 6+ Miles",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 70,
+          "cardioNotes": "70 minute long run covering 6+ miles. You're ready for 10K distance! Keep it easy and conversational.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 6.2,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        }
+      ]
+    },
+    {
+      "weekNumber": 11,
+      "weekGoal": "Peak week - full 10K distance",
+      "totalWeeklyVolume": "160-180 minutes",
+      "keyWorkouts": "3x runs, complete 10K distance",
+      "days": [
+        {
+          "dayOfWeek": 0,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 1,
+          "dayType": "cardio",
+          "dayName": "Easy Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 35,
+          "cardioNotes": "35 minute easy run. Save energy for the long run.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 3.25,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 2,
+          "dayType": "strength",
+          "dayName": "Running Strength",
+          "exercises": [
+            {
+              "name": "Goblet Squat",
+              "targetSets": 3,
+              "targetReps": 12,
+              "isBodyweight": false,
+              "equipmentNeeded": "dumbbell or kettlebell",
+              "notes": "Moderate weight, 15-20 lbs"
+            },
+            {
+              "name": "Romanian Deadlift",
+              "targetSets": 3,
+              "targetReps": 10,
+              "isBodyweight": false,
+              "equipmentNeeded": "dumbbells",
+              "notes": "Light weight, focus on hamstrings"
+            },
+            {
+              "name": "Step-up",
+              "targetSets": 3,
+              "targetReps": 10,
+              "isBodyweight": true,
+              "equipmentNeeded": "bench or box",
+              "notes": "Each leg, drive through heel"
+            },
+            {
+              "name": "Side Plank",
+              "targetSets": 3,
+              "targetReps": 30,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "30 seconds each side"
+            },
+            {
+              "name": "Calf Raise",
+              "targetSets": 3,
+              "targetReps": 15,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Slow and controlled"
+            }
+          ],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 3,
+          "dayType": "cardio",
+          "dayName": "Moderate Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 40,
+          "cardioNotes": "40 minute run. Easy for 30 min, last 10 min at moderate effort.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 3.75,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "progressive",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 4,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 5,
+          "dayType": "cardio",
+          "dayName": "Easy Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 30,
+          "cardioNotes": "30 minute easy run. Final prep before full 10K.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 2.75,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 6,
+          "dayType": "cardio",
+          "dayName": "PEAK Long Run - Full 10K!",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 70,
+          "cardioNotes": "Full 10K distance (6.2 miles)! This is your peak long run. Keep it conversational and complete the distance. You've got this!",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 6.2,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        }
+      ]
+    },
+    {
+      "weekNumber": 12,
+      "weekGoal": "Taper week - race day ready!",
+      "totalWeeklyVolume": "90-110 minutes",
+      "keyWorkouts": "2x easy runs, RACE DAY!",
+      "days": [
+        {
+          "dayOfWeek": 0,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 1,
+          "dayType": "cardio",
+          "dayName": "Easy Taper Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 25,
+          "cardioNotes": "Easy 25 minute run. Keep it light and comfortable - you're tapering for race day!",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 2.25,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 2,
+          "dayType": "strength",
+          "dayName": "Running Strength",
+          "exercises": [
+            {
+              "name": "Bodyweight Squat",
+              "targetSets": 2,
+              "targetReps": 12,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Light activation only"
+            },
+            {
+              "name": "Walking Lunge",
+              "targetSets": 2,
+              "targetReps": 16,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Total steps, stay loose"
+            },
+            {
+              "name": "Plank",
+              "targetSets": 2,
+              "targetReps": 30,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "30 seconds, minimal work"
+            },
+            {
+              "name": "Calf Raise",
+              "targetSets": 2,
+              "targetReps": 15,
+              "isBodyweight": true,
+              "equipmentNeeded": "none",
+              "notes": "Keep lower legs fresh"
+            }
+          ],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 3,
+          "dayType": "cardio",
+          "dayName": "Short Easy Run",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 20,
+          "cardioNotes": "Short 20 minute easy run. Include 3-4 x 20 second strides at the end to keep legs sharp.",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 1.75,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:30",
+          "workoutStructure": "steady",
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 4,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 5,
+          "dayType": "rest",
+          "dayName": "Rest Day",
+          "exercises": [],
+          "cardioType": null,
+          "cardioDuration": null,
+          "cardioNotes": null,
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": null,
+          "distanceUnit": null,
+          "targetPace": null,
+          "workoutStructure": null,
+          "isBrickWorkout": false
+        },
+        {
+          "dayOfWeek": 6,
+          "dayType": "cardio",
+          "dayName": "RACE DAY - 10K",
+          "exercises": [],
+          "cardioType": "running",
+          "cardioDuration": 70,
+          "cardioNotes": "10K RACE DAY! You've trained for 12 weeks and you're ready! Goal: Complete 10K (65-70 minutes, 10:30-11:00/mile pace). Start conservatively, settle into a comfortable rhythm, and finish strong. Trust the process and enjoy the accomplishment!",
+          "targetHRMin": null,
+          "targetHRMax": null,
+          "targetDistance": 6.2,
+          "distanceUnit": "miles",
+          "targetPace": "10:30-11:00",
+          "workoutStructure": "race",
+          "isBrickWorkout": false
+        }
+      ]
+    }
+  ]
+}
