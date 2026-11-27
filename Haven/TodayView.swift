@@ -1,5 +1,5 @@
 // TODAY VIEW — Steady
-// Layout: date line → Recovery hero → Today's training → Insights → Body snapshot.
+// Layout: date line → Recovery hero → Body snapshot (opens Body tab) → Today's training → Insights.
 // No habits, no streaks, no Pace. Recovery state drives the training guidance.
 
 import SwiftUI
@@ -9,6 +9,7 @@ import WidgetKit
 struct TodayView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.unitFormatter) private var unitFormatter
+    @Environment(NavigationRouter.self) private var router
     @Query private var profiles: [UserProfile]
     @Query(filter: #Predicate<TrainingProgram> { $0.isActive == true }) private var activePrograms: [TrainingProgram]
     @Query(sort: \HealthMetrics.date, order: .reverse) private var allMetrics: [HealthMetrics]
@@ -117,7 +118,12 @@ struct TodayView: View {
                         showRecoveryDetail = true
                     }
 
-                    BodySnapshotCard(snapshot: bodySnapshot, goal: bodyGoal, metabolicAge: metabolicAge)
+                    Button {
+                        router.selectedTab = AppTab.body.rawValue
+                    } label: {
+                        BodySnapshotCard(snapshot: bodySnapshot, goal: bodyGoal, metabolicAge: metabolicAge, showsChevron: true)
+                    }
+                    .buttonStyle(.plain)
 
                     TrainingDayPanel(
                         todaysWorkout: todaysPlannedWorkout,
@@ -237,11 +243,20 @@ struct BodySnapshotCard: View {
     let snapshot: BodySnapshot
     var goal: BodyGoal? = nil
     var metabolicAge: MetabolicAge? = nil
+    var showsChevron: Bool = false
     @Environment(\.unitFormatter) private var unitFormatter
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Body").steadyLabel()
+            HStack {
+                Text("Body").steadyLabel()
+                Spacer()
+                if showsChevron {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.steadyTextFaint)
+                }
+            }
 
             if snapshot.weight == nil {
                 Text("Log your weight on the Body tab to track lean mass and body fat here.")
