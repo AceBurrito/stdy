@@ -19,12 +19,12 @@ struct WorkoutHistoryCard: View {
             // Header row: icon + name/date + duration/volume + menu
             HStack(alignment: .top, spacing: 10) {
                 // Dumbbell icon — mirrors the cardio card's heart icon treatment
-                Image(systemName: "dumbbell.fill")
+                Image(systemName: "dumbbell")
                     .font(.system(size: 14))
                     .foregroundColor(.atlasPrimary)
                     .frame(width: 32, height: 32)
-                    .background(Color.atlasPrimary.opacity(0.15))
-                    .cornerRadius(8)
+                    .background(Color.steadyRaised)
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
 
                 // Name + date
                 VStack(alignment: .leading, spacing: 2) {
@@ -120,13 +120,11 @@ struct WorkoutHistoryCard: View {
             if let note = coachingNote {
                 Text(note)
                     .font(.system(size: 13))
-                    .foregroundColor(.atlasPrimary.opacity(0.85))
+                    .foregroundColor(.atlasTextMuted)
                     .padding(.top, 4)
             }
         }
-        .padding(16)
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(12)
+        .steadyPanel()
     }
     
     // MARK: - Computed
@@ -348,38 +346,5 @@ struct WorkoutSnapshotBuilder {
         }
         
         return nil
-    }
-}
-
-// MARK: - Quick Link Card
-
-struct QuickLinkCard: View {
-    let icon: String
-    let title: String
-    let subtitle: String
-    let color: Color
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 24))
-                .foregroundColor(color)
-            
-            Text(title)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.atlasText)
-            
-            Text(subtitle)
-                .font(.system(size: 12))
-                .foregroundColor(.atlasTextMuted)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(color.opacity(0.3), lineWidth: 1)
-        )
     }
 }
