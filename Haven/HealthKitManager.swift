@@ -699,6 +699,128 @@ class HealthKitManager: ObservableObject {
         }
     }
     
+    // MARK: - Body Composition Import (Sprint 2)
+
+    /// Asks only for types the user hasn't been asked about yet (e.g. body fat,
+    /// added after their original onboarding). No-op when nothing is new.
+    func requestAuthorizationIfNeeded() async {
+        guard HKHealthStore.isHealthDataAvailable() else { return }
+        let read: Set<HKObjectType> = [
+            HKObjectType.quantityType(forIdentifier: .bodyMass)!,
+            HKObjectType.quantityType(forIdentifier: .bodyFatPercentage)!
+        ]
+        let status: HKAuthorizationRequestStatus = await withCheckedContinuation { continuation in
+            healthStore.getRequestStatusForAuthorization(toShare: [], read: read) { status, _ in
+                continuation.resume(returning: status)
+            }
+        }
+        if status == .shouldRequest {
+            try? await requestAuthorization()
+        }
+    }
+
+    /// All samples of a quantity type since `start`, oldest first.
+    private func fetchQuantitySamples(_ identifier: HKQuantityTypeIdentifier, unit: HKUnit, since start: Date) async -> [(date: Date, value: Double)] {
+        guard let type = HKQuantityType.quantityType(forIdentifier: identifier) else { return [] }
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: Date(), options: .strictStartDate)
+        let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: true)
+
+        return await withCheckedContinuation { continuation in
+            let query = HKSampleQuery(sampleType: type, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { _, results, _ in
+                let samples = (results as? [HKQuantitySample]) ?? []
+                continuation.resume(returning: samples.map { (date: $0.endDate, value: $0.quantity.doubleValue(for: unit)) })
+            }
+            self.healthStore.execute(query)
+        }
+    }
+
+    private static let bodyCompImportKey = "bodyCompHealthImportDate"
+
+    /// Copies weight and body fat readings from Apple Health into BodyCompEntry,
+    /// one entry per day. Days the user logged by hand keep their weight; a
+    /// missing body fat value is filled in from Health. First run looks back a
+    /// year, later runs only re-check the last few days.
+    func importBodyComposition(modelContext: ModelContext) async {
+        guard HKHealthStore.isHealthDataAvailable() else { return }
+        let calendar = Calendar.current
+        let defaults = UserDefaults.standard
+
+        let start: Date
+        if let last = defaults.object(forKey: Self.bodyCompImportKey) as? Date {
+            start = calendar.date(byAdding: .day, value: -3, to: calendar.startOfDay(for: last)) ?? last
+        } else {
+            start = calendar.date(byAdding: .day, value: -365, to: Date()) ?? Date()
+        }
+
+        async let weightSamples = fetchQuantitySamples(.bodyMass, unit: .pound(), since: start)
+        async let fatSamples = fetchQuantitySamples(.bodyFatPercentage, unit: .percent(), since: start)
+        let weights = await weightSamples
+        let fats = await fatSamples
+        guard !weights.isEmpty || !fats.isEmpty else {
+            defaults.set(Date(), forKey: Self.bodyCompImportKey)
+            return
+        }
+
+        // Latest reading per day (samples are sorted oldest first)
+        var weightByDay: [Date: (date: Date, value: Double)] = [:]
+        for sample in weights where sample.value > 0 { weightByDay[calendar.startOfDay(for: sample.date)] = sample }
+        var fatByDay: [Date: Double] = [:]
+        for sample in fats where sample.value > 0 && sample.value < 1 { fatByDay[calendar.startOfDay(for: sample.date)] = sample.value }
+
+        let existing = (try? modelContext.fetch(FetchDescriptor<BodyCompEntry>(
+            predicate: #Predicate { $0.date >= start }
+        ))) ?? []
+        var entriesByDay: [Date: [BodyCompEntry]] = [:]
+        for entry in existing { entriesByDay[calendar.startOfDay(for: entry.date), default: []].append(entry) }
+
+        let profile = (try? modelContext.fetch(FetchDescriptor<UserProfile>()))?.first
+        var inserted = 0
+        var updated = 0
+
+        for day in Set(weightByDay.keys).union(fatByDay.keys) {
+            let dayEntries = entriesByDay[day] ?? []
+            let healthEntry = dayEntries.first { $0.isFromHealth }
+            let manualEntries = dayEntries.filter { !$0.isFromHealth }
+            let fat = fatByDay[day]
+
+            if !manualEntries.isEmpty {
+                // Hand-logged day: only fill a missing body fat value
+                if let fat, let latest = manualEntries.max(by: { $0.date < $1.date }), latest.bodyFat == nil {
+                    latest.bodyFat = fat
+                    updated += 1
+                }
+                continue
+            }
+
+            if let healthEntry {
+                if let w = weightByDay[day], abs(healthEntry.weight - w.value) > 0.01 {
+                    healthEntry.weight = w.value
+                    healthEntry.date = w.date
+                    updated += 1
+                }
+                if let fat, healthEntry.bodyFat != fat {
+                    healthEntry.bodyFat = fat
+                    updated += 1
+                }
+            } else if let w = weightByDay[day] {
+                let entry = BodyCompEntry(date: w.date, weight: w.value)
+                entry.bodyFat = fat
+                entry.source = "health"
+                entry.userProfile = profile
+                modelContext.insert(entry)
+                inserted += 1
+            }
+            // A body fat reading with no weight that day is skipped: every entry needs a weight.
+        }
+
+        defaults.set(Date(), forKey: Self.bodyCompImportKey)
+        if inserted + updated > 0 {
+            try? modelContext.save()
+            BodyProfileSync.apply(modelContext: modelContext)
+            print("✅ [Body] Imported from Apple Health — \(inserted) new, \(updated) updated")
+        }
+    }
+
     // MARK: - Fetch Sleep for Specific Date
     func fetchSleepForDate(_ date: Date) async -> (duration: Double, bedtime: Date, wakeTime: Date)? {
         guard let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else {

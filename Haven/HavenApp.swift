@@ -151,6 +151,9 @@ struct RootView: View {
                         // BUG-014 pattern: HealthKitManager gates this with isSyncing + 30s interval
                         await HealthKitManager.shared.syncMetricsWithSmartRefresh(modelContext: modelContext)
 
+                        // Sprint 2: pull new weight / body fat readings from Apple Health
+                        await HealthKitManager.shared.importBodyComposition(modelContext: modelContext)
+
                         // Phase 3 fix: migrate any raw exerciseID strings saved as exercise names
                         PlanCommitter.migrateRawExerciseIDs(modelContext: modelContext)
 

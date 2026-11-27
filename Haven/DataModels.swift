@@ -515,8 +515,12 @@ class BodyCompEntry {
     var bodyFat: Double?            // fraction, 0.18 = 18%
     var waistCircumference: Double?
     var notes: String?
+    /// "health" when imported from Apple Health; nil or "manual" when logged in the app.
+    var source: String?
     
     var userProfile: UserProfile?
+    
+    var isFromHealth: Bool { source == "health" }
     
     init(date: Date, weight: Double) {
         self.id = UUID()

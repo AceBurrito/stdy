@@ -61,6 +61,13 @@ struct TodayView: View {
         BodySnapshot.from(entries: Array(bodyCompEntries.prefix(60)), profile: profiles.first)
     }
 
+    private var bodyGoal: BodyGoal? {
+        BodyGoal.from(
+            state: BodyState.from(entries: Array(bodyCompEntries.prefix(120)), profile: profiles.first),
+            targetBodyFat: profiles.first?.targetBodyFatPercent
+        )
+    }
+
     private var recentPRCount: Int {
         DataController(modelContext: modelContext).recentPRs(days: 7).count
     }
@@ -88,7 +95,7 @@ struct TodayView: View {
                         onStartCardio: { showCardioLog = true }
                     )
 
-                    BodySnapshotCard(snapshot: bodySnapshot)
+                    BodySnapshotCard(snapshot: bodySnapshot, goal: bodyGoal)
 
                     if isTrainingComplete && !hasSeenWidgetPrompt && !widgetAlreadyAdded {
                         WidgetPromptCard(
@@ -190,6 +197,7 @@ struct TodayView: View {
 
 struct BodySnapshotCard: View {
     let snapshot: BodySnapshot
+    var goal: BodyGoal? = nil
     @Environment(\.unitFormatter) private var unitFormatter
 
     var body: some View {
@@ -224,9 +232,28 @@ struct BodySnapshotCard: View {
                         footnote: snapshot.leanMass == nil ? "needs body fat" : nil
                     )
                 }
+                if let goal {
+                    Rectangle().fill(Color.steadyHairline).frame(height: 1)
+                    HStack(spacing: 6) {
+                        Text("Goal").steadyLabel(.steadyTextFaint)
+                        Text(String(format: "%.1f%% · ", goal.targetBodyFat * 100) + unitFormatter.displayWeight(goal.goalWeight))
+                            .font(SteadyType.metric(13, weight: .medium))
+                            .foregroundColor(.atlasText)
+                        Spacer()
+                        Text(goalStatus(goal))
+                            .font(SteadyType.caption)
+                            .foregroundColor(.atlasTextMuted)
+                    }
+                }
             }
         }
         .steadyPanel()
+    }
+
+    private func goalStatus(_ goal: BodyGoal) -> String {
+        if goal.isReached { return "reached" }
+        let amount = String(format: "%.1f %@", unitFormatter.fromLbs(abs(goal.toGo)), unitFormatter.weightUnit)
+        return amount + (goal.toGo > 0 ? " to lose" : " to gain")
     }
 
     private var separator: some View {
