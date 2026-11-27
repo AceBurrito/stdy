@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>STDY: Strength &amp; Recovery</title>
-  <meta name="description" content="STDY reads your sleep, HRV and resting heart rate, makes one call for the day, and tracks whether your lifting and your body are moving. 7 days free, then $14.99 once.">
+  <meta name="description" content="An iPhone app for people who lift. It reads your sleep, HRV and resting heart rate, tells you how hard to train today, and tracks whether your lifts and your body are moving. Free for a week, then $14.99 once.">
   <meta name="theme-color" content="#0f1011">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,15 +31,15 @@
   <section class="hero">
     <div class="wrap">
       <div>
-        <div class="label">Strength · Recovery · Body</div>
-        <h1>Know how hard to train <em>today.</em></h1>
-        <p class="lede">STDY reads your sleep, HRV and resting heart rate from Apple Health and makes one call for the day. Then it shows you the workout to match, and tracks whether your lifts and your body are actually moving.</p>
+        <div class="label">An iPhone app for people who lift</div>
+        <h1>Should you train hard <em>today?</em></h1>
+        <p class="lede">My watch knew how I slept. My HRV app had a number. My workout log had my lifts. None of them talked to each other, and none of them told me whether to push or back off. So I built one app that does.</p>
         <div class="cta-row">
           <!-- Replace href with your App Store link, and this button with Apple's official badge artwork -->
           <a class="button" href="#app-store-link" id="app-store-button">
             <span><small>Download on the</small>App Store</span>
           </a>
-          <span class="price-note"><strong>7 days free</strong>, then $14.99 once. No subscription.</span>
+          <span class="price-note">Free for a week, then <strong>$14.99 once</strong>.</span>
         </div>
       </div>
 
@@ -84,36 +84,48 @@
     </div>
   </section>
 
+  <!-- Screenshot slots: replace each .shot-slot div with <img src="screens/NAME.png" alt="..."> -->
+  <section class="block shots-block" aria-label="Screenshots">
+    <div class="wrap">
+      <div class="shots">
+        <figure class="shot"><div class="shot-slot">Today</div><figcaption>What you see when you wake up.</figcaption></figure>
+        <figure class="shot"><div class="shot-slot">Logging a set</div><figcaption>Last session's numbers sit right next to this one.</figcaption></figure>
+        <figure class="shot"><div class="shot-slot">Strength</div><figcaption>Sets per muscle against your plan.</figcaption></figure>
+        <figure class="shot"><div class="shot-slot">Body</div><figcaption>The trend, not the daily bounce.</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
   <section class="block" id="recovery">
     <div class="wrap">
       <div class="section-head">
         <div class="label">Recovery</div>
-        <h2>One call each morning</h2>
-        <p>Your HRV and resting heart rate are compared with your own 30-day average, not population norms. Sleep is scored against the hours you actually got. Missing data is left out, never counted against you.</p>
+        <h2>The morning call</h2>
+        <p>STDY looks at last night's sleep, your HRV and your resting heart rate, and compares them with your own last 30 days. A 41 ms HRV is great for some people and a bad night for others, so it only ever compares you with you. If your watch didn't catch your sleep, that night is skipped. It won't count as zero.</p>
       </div>
       <div class="states">
         <div class="state-card ready">
           <div class="range">85–100</div>
           <h3>Ready to Crush</h3>
-          <p>Every signal is up. Go heavy, chase a top set.</p>
+          <p>Everything's up. Good day to go for a top set.</p>
         </div>
         <div class="state-card good">
           <div class="range">65–84</div>
           <h3>Good to Go</h3>
-          <p>Recovery is solid. Train as planned.</p>
+          <p>Train the way you planned.</p>
         </div>
         <div class="state-card manage">
           <div class="range">40–64</div>
           <h3>Manage It</h3>
-          <p>Some signals are down. Hold your weights and keep 2–3 reps in reserve.</p>
+          <p>Hold your weights and leave 2–3 reps in the tank.</p>
         </div>
         <div class="state-card recover">
           <div class="range">0–39</div>
           <h3>Recover</h3>
-          <p>Your body is behind. Walk, stretch, or cut volume in half.</p>
+          <p>Go for a walk, or do half the volume.</p>
         </div>
       </div>
-      <p class="weights">Weighting: sleep 40%, HRV 35%, resting heart rate 25%.</p>
+      <p class="weights">Sleep counts for 40% of the score, HRV 35%, resting heart rate 25%.</p>
     </div>
   </section>
 
@@ -122,13 +134,12 @@
       <div>
         <div class="section-head">
           <div class="label">Strength</div>
-          <h2>Sets that match your plan</h2>
-          <p>Log a session in a few taps. STDY counts working sets for every muscle group against what your plan calls for, and flags when the plan itself is too light to grow.</p>
+          <h2>Sets per muscle, against your actual plan</h2>
+          <p>Most volume trackers hold you to a generic number. STDY holds you to the program you're running, and tells you when that program is too light for a muscle to grow. A row counts half a set for biceps and a bench press counts half for triceps, because they're doing work too.</p>
         </div>
         <ul class="points">
-          <li><strong>Weekly sets per muscle</strong><span>Compound lifts count half a set for the muscles that help, so rows count toward biceps and presses toward triceps.</span></li>
-          <li><strong>Progression you can see</strong><span>Estimated 1RM, top set and volume for every lift, with new bests marked as they happen.</span></li>
-          <li><strong>Last time, right there</strong><span>Each exercise shows what you did last session and what to try next.</span></li>
+          <li><strong>Last time is right there</strong><span>Each exercise shows what you lifted last session and what to try today, so you're not scrolling back through history between sets.</span></li>
+          <li><strong>Progress per lift</strong><span>Estimated 1RM, top set and volume over time. New bests get marked when they happen.</span></li>
         </ul>
       </div>
       <div class="panel" aria-label="Example of weekly sets per muscle">
@@ -174,13 +185,12 @@
       <div>
         <div class="section-head">
           <div class="label">Body</div>
-          <h2>Read the trend, not the scale</h2>
-          <p>Daily weigh-ins bounce around. STDY smooths them into a 7-day trend and a weekly rate, pulls body fat from your smart scale through Apple Health, and turns a target body fat into a goal weight that keeps your lean mass.</p>
+          <h2>The scale is a little wrong every day</h2>
+          <p>Water, salt, a late dinner. Your weight swings a couple of pounds for reasons that have nothing to do with fat, which makes a single weigh-in close to useless. STDY smooths it into a 7-day trend so you can see which way you're actually heading.</p>
         </div>
         <ul class="points">
-          <li><strong>Lean mass and fat mass</strong><span>Split out from every reading that has body fat.</span></li>
-          <li><strong>Pace check</strong><span>A heads-up if you're losing more than 1% of body weight a week, the point where muscle starts to go.</span></li>
-          <li><strong>Progress photos</strong><span>Side by side, stored with the rest of your data.</span></li>
+          <li><strong>Got a smart scale?</strong><span>If it writes body fat to Apple Health, STDY splits out lean mass and turns a body fat goal into a weight to aim for.</span></li>
+          <li><strong>A nudge if you're cutting too fast</strong><span>Losing more than about 1% of your body weight a week usually means losing muscle too. STDY will tell you.</span></li>
         </ul>
       </div>
     </div>
@@ -190,16 +200,20 @@
     <div class="wrap">
       <div class="section-head">
         <div class="label">Privacy</div>
-        <h2>Your data stays yours</h2>
-        <p>There's no STDY account and no STDY server. Your training log lives on your iPhone and in your own iCloud, and your health readings stay in Apple Health.</p>
+        <h2>There's no server</h2>
+        <p>I didn't build one. There's no account to make, your log stays on your phone and syncs through your own iCloud, and health data never leaves Apple Health. There are no ads or analytics in the app, so there's nothing for me to sell and nobody to sell it to.</p>
       </div>
-      <div class="promises">
-        <div class="promise"><strong>No account</strong><span>Open the app and start. Nothing to sign up for.</span></div>
-        <div class="promise"><strong>No ads, no tracking</strong><span>No analytics or advertising code in the app at all.</span></div>
-        <div class="promise"><strong>Your iCloud</strong><span>Sync uses your private iCloud storage, which we can't see.</span></div>
-        <div class="promise"><strong>Read, not sold</strong><span>Health data is used only to show you your numbers.</span></div>
+      <p class="weights"><a href="privacy.html">The full privacy policy</a> is short, if you want to check.</p>
+    </div>
+  </section>
+
+  <section class="block maker">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="label">Who made this</div>
+        <h2>One person, one app</h2>
+        <p>STDY is made by one person who lifts, wears a watch to bed, and wanted a straight answer in the morning. There's no team and no investors. If something's broken or you want a feature, <a href="support.html">email me</a>. I read all of it.</p>
       </div>
-      <p class="weights"><a href="privacy.html">Read the privacy policy</a></p>
     </div>
   </section>
 
@@ -208,14 +222,14 @@
       <div>
         <div class="label">Pricing</div>
         <div class="price num"><sup>$</sup>14.99</div>
-        <p class="price-sub">Once. Every feature, every update to version 1. Try it free for 7 days first.</p>
+        <p class="price-sub">Pay once and it's yours. Try every feature free for a week first. I don't want another subscription either.</p>
         <a class="button" href="#app-store-link">
           <span><small>Download on the</small>App Store</span>
         </a>
       </div>
       <div class="table-scroll">
         <table class="compare">
-          <caption class="label">What you'd pay over two years</caption>
+          <caption class="label">The subscription route, over two years</caption>
           <tbody>
             <tr class="us"><th scope="row">STDY</th><td>$14.99</td></tr>
             <tr><th scope="row">A workout log subscription</th><td>~$48–60</td></tr>
