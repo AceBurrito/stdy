@@ -84,7 +84,8 @@ struct TodayView: View {
         let input = InsightInputs(
             metrics: Array(allMetrics.prefix(40)),
             lifts: LiftAnalytics.histories(sessions: recentSessions, resolver: resolver),
-            volumeRows: MuscleVolume.rows(sessions: recentSessions, window: .thisWeek, experience: profiles.first?.experienceLevel, resolver: resolver),
+            volumeRows: MuscleVolume.rows(sessions: recentSessions, window: .thisWeek, experience: profiles.first?.experienceLevel, resolver: resolver,
+                                          plan: PlanVolume.weeklySets(program: activePrograms.first, resolver: resolver)),
             bodyState: BodyState.from(entries: Array(bodyCompEntries.prefix(120)), profile: profiles.first),
             bodyGoal: bodyGoal,
             plannedDaysLeftThisWeek: daysLeft,

@@ -56,6 +56,27 @@ enum VolumeTargets {
     }
 }
 
+// MARK: - Plan Volume
+
+/// Working sets per muscle group per week that the active plan prescribes,
+/// summed over its strength days. Nil when there's no plan with strength exercises,
+/// so callers fall back to the experience-based minimums.
+enum PlanVolume {
+    static func weeklySets(program: TrainingProgram?, resolver: MuscleGroupResolver) -> [MuscleGroup: Int]? {
+        guard let program = program else { return nil }
+        var totals: [MuscleGroup: Int] = [:]
+        var hasExercises = false
+        for day in program.workoutDays where day.dayType == "strength" {
+            for exercise in day.exercises {
+                hasExercises = true
+                guard let group = resolver.group(for: exercise.name) else { continue }
+                totals[group, default: 0] += max(exercise.targetSets, 0)
+            }
+        }
+        return hasExercises ? totals : nil
+    }
+}
+
 // MARK: - Weekly Muscle Volume
 
 enum VolumeStatus {
@@ -66,12 +87,24 @@ struct MuscleVolumeRow: Identifiable {
     var id: MuscleGroup { group }
     let group: MuscleGroup
     let sets: Double
+    /// Evidence-based weekly floor for this group, scaled by experience.
     let minimum: Int
     let ceiling: Int
+    /// Working sets per week the active plan prescribes; nil when there's no plan.
+    var planned: Int? = nil
+
+    /// What progress is measured against: the plan when there is one, else the minimum.
+    var target: Int { planned ?? minimum }
+
+    /// The plan itself prescribes fewer sets than the minimum for this group.
+    var planIsShort: Bool {
+        guard let planned = planned else { return false }
+        return planned < minimum
+    }
 
     var status: VolumeStatus {
         if sets <= 0 { return .none }
-        if sets < Double(minimum) { return .under }
+        if sets < Double(target) { return .under }
         if sets > Double(ceiling) { return .high }
         return .met
     }
@@ -118,6 +151,7 @@ enum MuscleVolume {
         window: VolumeWindow,
         experience: String?,
         resolver: MuscleGroupResolver,
+        plan: [MuscleGroup: Int]? = nil,
         now: Date = Date(),
         calendar: Calendar = .current
     ) -> [MuscleVolumeRow] {
@@ -138,12 +172,14 @@ enum MuscleVolume {
 
         return MuscleGroup.allCases
             .sorted { $0.sortOrder < $1.sortOrder }
-            .map { group in
-                MuscleVolumeRow(
+            .map { group -> MuscleVolumeRow in
+                let planned = plan.map { $0[group] ?? 0 }
+                return MuscleVolumeRow(
                     group: group,
                     sets: totals[group] ?? 0,
                     minimum: VolumeTargets.minimum(for: group, experience: experience),
-                    ceiling: VolumeTargets.ceiling(for: group, experience: experience)
+                    ceiling: max(VolumeTargets.ceiling(for: group, experience: experience), planned ?? 0),
+                    planned: planned
                 )
             }
     }

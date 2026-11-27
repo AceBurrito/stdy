@@ -48,6 +48,7 @@ enum DailyInsightsEngine {
         all += bodyPace(input)
         all += hrvTrend(input)
         all += consistency(input)
+        all += planGap(input)
         return Array(all.sorted { $0.priority > $1.priority }.prefix(limit))
     }
 
@@ -100,7 +101,7 @@ enum DailyInsightsEngine {
         guard daysLeft <= 4 else { return [] }                              // Thursday onward
 
         let gaps = input.volumeRows
-            .map { ($0, Double($0.minimum) - $0.sets) }
+            .map { ($0, Double($0.target) - $0.sets) }
             .filter { $0.1 >= 3 }
             .sorted { $0.1 > $1.1 }
         guard let top = gaps.first else { return [] }
@@ -113,10 +114,27 @@ enum DailyInsightsEngine {
         let others = gaps.count > 1 ? " \(gaps.count - 1) other group\(gaps.count == 2 ? " is" : "s are") short too." : ""
         return [DailyInsight(
             id: "volume-\(row.group.rawValue)",
-            title: "\(row.group.rawValue) is at \(Int(row.sets)) of \(row.minimum) sets",
+            title: "\(row.group.rawValue) is at \(Int(row.sets)) of \(row.target) sets",
             detail: "\(daysLeft) day\(daysLeft == 1 ? "" : "s") left this week. Add \(setsNeeded) sets of \(suggestion) \(when).\(others)",
             tone: .caution,
             priority: 70
+        )]
+    }
+
+    /// The plan itself gives a group fewer weekly sets than its minimum.
+    static func planGap(_ input: InsightInputs) -> [DailyInsight] {
+        let short = input.volumeRows
+            .filter { $0.planIsShort }
+            .sorted { ($0.minimum - $0.target) > ($1.minimum - $1.target) }
+        guard let top = short.first else { return [] }
+        let missing = top.minimum - top.target
+        let others = short.count > 1 ? " \(short.count - 1) other group\(short.count == 2 ? " is" : "s are") light too; see Strength." : ""
+        return [DailyInsight(
+            id: "plan-\(top.group.rawValue)",
+            title: "Your plan is light on \(top.group.shortName.lowercased())",
+            detail: "It gives \(top.target) sets a week, and \(top.minimum) is the usual minimum for growth. Add \(missing) sets a week in Training Schedule.\(others)",
+            tone: .neutral,
+            priority: 25
         )]
     }
 

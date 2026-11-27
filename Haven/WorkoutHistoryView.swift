@@ -12,6 +12,7 @@ struct WorkoutHistoryView: View {
     @Query(sort: \WorkoutSession.date, order: .reverse) private var workoutSessions: [WorkoutSession]
     @Query private var profiles: [UserProfile]
     @Query private var customExercises: [CustomExercise]
+    @Query(filter: #Predicate<TrainingProgram> { $0.isActive == true }) private var activePrograms: [TrainingProgram]
 
     @State private var showingWorkoutLog = false
     @State private var volumeWindow: VolumeWindow = .thisWeek
@@ -27,8 +28,12 @@ struct WorkoutHistoryView: View {
         return workoutSessions.filter { $0.date >= cutoff }
     }
 
+    private var planSets: [MuscleGroup: Int]? {
+        PlanVolume.weeklySets(program: activePrograms.first, resolver: resolver)
+    }
+
     private var volumeRows: [MuscleVolumeRow] {
-        MuscleVolume.rows(sessions: recentSessions, window: volumeWindow, experience: profiles.first?.experienceLevel, resolver: resolver)
+        MuscleVolume.rows(sessions: recentSessions, window: volumeWindow, experience: profiles.first?.experienceLevel, resolver: resolver, plan: planSets)
     }
 
     private var weeklyBars: [SteadyBarChart.Bar] {
@@ -167,9 +172,9 @@ struct WorkoutHistoryView: View {
             HStack {
                 Text("Sets per muscle").steadyLabel()
                 Spacer()
-                let under = volumeRows.filter { $0.status == .under || $0.status == .none }.count
+                let under = volumeRows.filter { $0.target > 0 && ($0.status == .under || $0.status == .none) }.count
                 if volumeWindow != .thisWeek {
-                    Text(under == 0 ? "all minimums met" : "\(under) under minimum")
+                    Text(under == 0 ? "all targets met" : "\(under) under target")
                         .font(SteadyType.caption)
                         .foregroundColor(under == 0 ? .atlasPrimary : .atlasAmber)
                 }
@@ -184,12 +189,45 @@ struct WorkoutHistoryView: View {
                 .font(SteadyType.caption)
                 .foregroundColor(.steadyTextFaint)
                 .fixedSize(horizontal: false, vertical: true)
+            if !planShortRows.isEmpty {
+                planCheck
+            }
         }
         .steadyPanel()
     }
 
+    private var planShortRows: [MuscleVolumeRow] {
+        volumeRows.filter { $0.planIsShort }
+    }
+
+    /// Where the plan itself falls short of the usual weekly minimum.
+    private var planCheck: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Rectangle().fill(Color.steadyHairline).frame(height: 1)
+            Text("Plan check").steadyLabel(.atlasAmber)
+            ForEach(planShortRows) { row in
+                HStack(alignment: .firstTextBaseline) {
+                    Text(row.group.shortName)
+                        .font(SteadyType.caption)
+                        .foregroundColor(.atlasText)
+                    Spacer()
+                    Text("plan \(row.target) · min \(row.minimum) · add \(row.minimum - row.target)")
+                        .font(SteadyType.metric(12, weight: .regular))
+                        .foregroundColor(.atlasTextMuted)
+                }
+            }
+            Text("Your plan gives these groups fewer sets a week than the usual minimum for growth. Add sets to an exercise for them in Training Schedule.")
+                .font(SteadyType.caption)
+                .foregroundColor(.steadyTextFaint)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.top, 2)
+    }
+
     private var volumeFootnote: String {
-        let base = "The tick is your weekly minimum: 10 working sets for big muscle groups, 6 for arms and core, scaled to your experience. Sets count toward the exercise's main muscle."
+        let base = planSets != nil
+            ? "The tick is the sets your plan gives each muscle group per week. Sets count toward the exercise's main muscle."
+            : "The tick is your weekly minimum: 10 working sets for big muscle groups, 6 for arms and core, scaled to your experience. Set up a plan and the targets follow it instead. Sets count toward the exercise's main muscle."
         if volumeWindow == .thisWeek {
             let day = Calendar.current.component(.weekday, from: Date())
             let daysLeft = day == 1 ? 0 : 8 - day
@@ -303,7 +341,7 @@ struct MuscleVolumeBar: View {
         }
     }
 
-    private var scale: Double { max(Double(row.ceiling), row.sets, 1) }
+    private var scale: Double { max(Double(row.ceiling), Double(row.target), row.sets, 1) }
 
     private var setsText: String {
         row.sets.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int(row.sets))" : String(format: "%.1f", row.sets)
@@ -322,7 +360,7 @@ struct MuscleVolumeBar: View {
                     Rectangle()
                         .fill(Color.atlasText.opacity(0.7))
                         .frame(width: 2)
-                        .offset(x: geo.size.width * Double(row.minimum) / scale - 1)
+                        .offset(x: geo.size.width * Double(row.target) / scale - 1)
                 }
             }
             .frame(height: 8)
@@ -331,14 +369,14 @@ struct MuscleVolumeBar: View {
                 Text(setsText)
                     .font(SteadyType.metric(13))
                     .foregroundColor(row.status == .none ? .steadyTextFaint : .atlasText)
-                Text("/\(row.minimum)")
+                Text("/\(row.target)")
                     .font(SteadyType.metric(11, weight: .regular))
                     .foregroundColor(.steadyTextFaint)
             }
             .frame(width: 48, alignment: .trailing)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(row.group.rawValue): \(setsText) of \(row.minimum) minimum sets")
+        .accessibilityLabel("\(row.group.rawValue): \(setsText) of \(row.target) \(row.planned == nil ? "minimum" : "planned") sets")
     }
 }
 

@@ -72,6 +72,7 @@ enum WeeklySummary {
         let custom = (try? modelContext.fetch(FetchDescriptor<CustomExercise>())) ?? []
         let profile = (try? modelContext.fetch(FetchDescriptor<UserProfile>()))?.first
         let entries = (try? modelContext.fetch(FetchDescriptor<BodyCompEntry>())) ?? []
+        let program = (try? modelContext.fetch(FetchDescriptor<TrainingProgram>(predicate: #Predicate { $0.isActive == true })))?.first
         let resolver = MuscleGroupResolver(customExercises: custom)
 
         var parts: [String] = []
@@ -84,15 +85,17 @@ enum WeeklySummary {
             parts.append("\(thisWeek.count) session\(thisWeek.count == 1 ? "" : "s"), \(sets) working sets.")
         }
 
-        let rows = MuscleVolume.rows(sessions: sessions, window: .thisWeek, experience: profile?.experienceLevel, resolver: resolver)
-        let under = rows.filter { $0.sets < Double($0.minimum) }.map { $0.group.shortName.lowercased() }
+        let plan = PlanVolume.weeklySets(program: program, resolver: resolver)
+        let rows = MuscleVolume.rows(sessions: sessions, window: .thisWeek, experience: profile?.experienceLevel, resolver: resolver, plan: plan)
+        let under = rows.filter { $0.target > 0 && $0.sets < Double($0.target) }.map { $0.group.shortName.lowercased() }
+        let goal = plan == nil ? "minimum" : "planned sets"
         if !thisWeek.isEmpty {
             if under.isEmpty {
-                parts.append("Every muscle group hit its minimum.")
+                parts.append(plan == nil ? "Every muscle group hit its minimum." : "Every muscle group hit its planned sets.")
             } else if under.count <= 3 {
-                parts.append("Under minimum: \(under.joined(separator: ", ")).")
+                parts.append("Short of \(goal): \(under.joined(separator: ", ")).")
             } else {
-                parts.append("\(under.count) muscle groups under minimum.")
+                parts.append("\(under.count) muscle groups short of \(goal).")
             }
         }
 
