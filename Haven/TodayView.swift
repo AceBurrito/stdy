@@ -259,7 +259,7 @@ struct BodySnapshotCard: View {
             }
 
             if snapshot.weight == nil {
-                Text("Log your weight on the Body tab to track lean mass and body fat here.")
+                Text("Log your weight on the Body tab to see weight, body fat and metabolic age here.")
                     .font(SteadyType.body)
                     .foregroundColor(.atlasTextMuted)
                     .fixedSize(horizontal: false, vertical: true)
@@ -283,7 +283,8 @@ struct BodySnapshotCard: View {
                         label: "Metabolic age",
                         value: metabolicAge.map { "\($0.years)" } ?? "—",
                         unit: metabolicAge == nil ? "" : "yrs",
-                        footnote: metabolicAgeFootnote
+                        footnote: metabolicAgeFootnote,
+                        footnoteColor: (metabolicAge.map { $0.years < $0.actualAge } ?? false) ? .atlasPrimary : .atlasTextMuted
                     )
                 }
                 if let goal {
@@ -309,8 +310,8 @@ struct BodySnapshotCard: View {
             return snapshot.bodyFatPercent == nil ? "needs body fat" : "needs age & height"
         }
         let diff = estimate.years - estimate.actualAge
-        if diff == 0 { return "same as your age" }
-        return "\(abs(diff)) \(diff < 0 ? "younger" : "older") than you"
+        if diff == 0 { return "= your age" }
+        return "\(abs(diff)) yr\(abs(diff) == 1 ? "" : "s") \(diff < 0 ? "younger" : "older")"
     }
 
     private func goalStatus(_ goal: BodyGoal) -> String {
@@ -330,13 +331,18 @@ struct BodySnapshotCard: View {
         String(format: "%.1f", unitFormatter.fromLbs(lbs))
     }
 
-    private func column(label: String, value: String, unit: String, footnote: String?) -> some View {
+    private func column(label: String, value: String, unit: String, footnote: String?, footnoteColor: Color = .atlasTextMuted) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(label).steadyLabel(.steadyTextFaint)
+            Text(label)
+                .steadyLabel(.steadyTextFaint)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(value)
-                    .font(SteadyType.metric(20))
+                    .font(SteadyType.metric(24))
                     .foregroundColor(value == "—" ? .steadyTextFaint : .atlasText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                 Text(unit)
                     .font(SteadyType.caption)
                     .foregroundColor(.atlasTextMuted)
@@ -344,7 +350,7 @@ struct BodySnapshotCard: View {
             if let footnote {
                 Text(footnote)
                     .font(SteadyType.caption)
-                    .foregroundColor(.atlasTextMuted)
+                    .foregroundColor(footnoteColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
