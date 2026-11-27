@@ -30,7 +30,7 @@ struct BodyCompView: View {
 
     // Chart
     @State private var chartMetric: BodyMetric = .weight
-    @State private var chartRange: BodyChartRange = .quarter
+    @State private var chartRange: SteadyChartRange = .quarter
 
     // Face ID lock
     @AppStorage("bodyCompProtectionEnabled") private var protectionEnabled = false
@@ -255,7 +255,7 @@ struct BodyCompView: View {
                 SteadySegmented(options: BodyMetric.allCases, selection: $chartMetric) { $0.title }
             }
             BodyTrendChart(metric: chartMetric, points: chartPoints, range: chartRange, goalValue: chartGoal)
-            SteadySegmented(options: BodyChartRange.allCases, selection: $chartRange) { $0.title }
+            SteadySegmented(options: SteadyChartRange.allCases, selection: $chartRange) { $0.title }
         }
         .steadyPanel()
     }
@@ -487,35 +487,6 @@ struct GoalProgressBar: View {
         }
         .frame(height: 6)
         .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
-    }
-}
-
-// MARK: - Segmented Control
-
-struct SteadySegmented<Option: Hashable>: View {
-    let options: [Option]
-    @Binding var selection: Option
-    let title: (Option) -> String
-
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(options, id: \.self) { option in
-                Button { selection = option } label: {
-                    Text(title(option))
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(selection == option ? .atlasText : .atlasTextMuted)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 7)
-                        .background(selection == option ? Color.steadyRaised : Color.clear)
-                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(2)
-        .background(Color.atlasBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.steadyHairline, lineWidth: 1))
     }
 }
 

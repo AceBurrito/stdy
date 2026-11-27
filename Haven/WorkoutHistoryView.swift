@@ -1,75 +1,69 @@
+// WorkoutHistoryView.swift
+// Steady — Strength tab.
+// Layout: this week (sessions, sets, volume + 8-week sets chart) → working sets
+// per muscle group vs. minimums → lifts and their trends → recent workouts.
+
 import SwiftUI
 import SwiftData
-
-// MARK: - Strength Tab (Complete Redesign)
-// Matches the Cardio tab's elegance and information density.
-// Layout: THIS WEEK summary → Navigation links → Rich workout history
 
 struct WorkoutHistoryView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.unitFormatter) private var unitFormatter
     @Query(sort: \WorkoutSession.date, order: .reverse) private var workoutSessions: [WorkoutSession]
     @Query private var profiles: [UserProfile]
+    @Query private var customExercises: [CustomExercise]
 
     @State private var showingWorkoutLog = false
-    @State private var sessionToDelete: WorkoutSession? = nil
-    @State private var showDeleteConfirmation = false
-    // BUG-D: programmatic navigation so swipeActions work
+    @State private var volumeWindow: VolumeWindow = .thisWeek
     @State private var selectedSession: WorkoutSession? = nil
-    
-    private var userProfile: UserProfile? { profiles.first }
-    
-    // MARK: - Computed Data
-    
-    private var weeklySummary: WeeklyStrengthSummary {
-        WeeklyStrengthSummary.calculate(from: workoutSessions)
+    @State private var sessionToDelete: WorkoutSession? = nil
+
+    private var resolver: MuscleGroupResolver { MuscleGroupResolver(customExercises: customExercises) }
+    private var weeklySummary: WeeklyStrengthSummary { WeeklyStrengthSummary.calculate(from: workoutSessions) }
+
+    /// Sessions from the last 10 weeks are enough for every panel on this tab
+    private var recentSessions: [WorkoutSession] {
+        guard let cutoff = Calendar.current.date(byAdding: .day, value: -70, to: Date()) else { return workoutSessions }
+        return workoutSessions.filter { $0.date >= cutoff }
     }
-    
-    /// Group workouts by month for display
-    private var groupedWorkouts: [(String, [WorkoutSession])] {
-        let grouped = Dictionary(grouping: workoutSessions) { session in
-            let formatter = DateFormatter()
-            formatter.dateFormat = "MMMM yyyy"
-            return formatter.string(from: session.date)
-        }
-        return grouped.sorted { pair1, pair2 in
-            guard let d1 = pair1.1.first?.date, let d2 = pair2.1.first?.date else { return false }
-            return d1 > d2
+
+    private var volumeRows: [MuscleVolumeRow] {
+        MuscleVolume.rows(sessions: recentSessions, window: volumeWindow, experience: profiles.first?.experienceLevel, resolver: resolver)
+    }
+
+    private var weeklyBars: [SteadyBarChart.Bar] {
+        let totals = MuscleVolume.weeklyTotals(sessions: recentSessions, weeks: 8)
+        return totals.enumerated().map { index, week in
+            SteadyBarChart.Bar(date: week.weekStart, value: Double(week.sets), isPartial: index == totals.count - 1)
         }
     }
-    
+
+    private var lifts: [LiftHistory] {
+        LiftAnalytics.histories(sessions: workoutSessions, resolver: resolver)
+    }
+
     // MARK: - Body
-    
+
     var body: some View {
         NavigationStack {
-            ZStack {
-                Color.atlasBackground.ignoresSafeArea()
-                
-                if workoutSessions.isEmpty {
-                    emptyStateView
-                } else {
-                    ScrollView {
-                        VStack(spacing: 24) {
-                            weeklySummarySection
-                            navigationLinksSection
-                            workoutHistorySection
-                            Spacer().frame(height: 40)
-                        }
-                        .padding(24)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    header
+                    if workoutSessions.isEmpty {
+                        emptyPanel
+                    } else {
+                        weekPanel
+                        musclePanel
+                        liftsPanel
+                        recentPanel
                     }
+                    Spacer(minLength: 24)
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 4)
             }
-            .navigationTitle("Strength")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showingWorkoutLog = true }) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(.atlasPrimary)
-                    }
-                }
-            }
+            .background(Color.atlasBackground.ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(item: $selectedSession) { session in
                 WorkoutDetailView(session: session)
             }
@@ -78,271 +72,386 @@ struct WorkoutHistoryView: View {
             }
             .confirmationDialog(
                 "Delete Workout?",
-                isPresented: $showDeleteConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button("Delete", role: .destructive) {
-                    if let session = sessionToDelete {
-                        deleteWorkout(session)
-                    }
-                }
-                Button("Cancel", role: .cancel) {
-                    sessionToDelete = nil
-                }
-            } message: {
-                if let session = sessionToDelete {
-                    Text("\(session.workoutName ?? "Workout") on \(session.date.formatted(date: .abbreviated, time: .omitted)) will be permanently deleted.")
-                }
+                isPresented: Binding(get: { sessionToDelete != nil }, set: { if !$0 { sessionToDelete = nil } }),
+                titleVisibility: .visible,
+                presenting: sessionToDelete
+            ) { session in
+                Button("Delete", role: .destructive) { WorkoutDeletion.delete(session, modelContext: modelContext) }
+                Button("Cancel", role: .cancel) { }
+            } message: { session in
+                Text("\(session.workoutName ?? "Workout") on \(session.date.formatted(date: .abbreviated, time: .omitted)) will be permanently deleted.")
             }
         }
     }
 
-    // MARK: - Delete Workout
+    // MARK: - Header
 
-    private func deleteWorkout(_ session: WorkoutSession) {
-        // Delete PRs that were set in this specific workout session
-        let sessionId = session.id
-        let prDescriptor = FetchDescriptor<PersonalRecord>(
-            predicate: #Predicate<PersonalRecord> { $0.workoutSessionId == sessionId }
-        )
-        if let prs = try? modelContext.fetch(prDescriptor) {
-            for pr in prs {
-                modelContext.delete(pr)
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Strength")
+                    .font(SteadyType.display(30))
+                    .foregroundColor(.atlasText)
+                Text(workoutSessions.first.map { "Last workout " + BodyFormat.relativeDay($0.date) } ?? "No workouts yet")
+                    .steadyLabel()
+            }
+            Spacer()
+            Button { showingWorkoutLog = true } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.atlasBackground)
+                    .frame(width: 36, height: 36)
+                    .background(Color.atlasPrimary)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+            .accessibilityLabel("Log workout")
+        }
+        .padding(.top, 12)
+        .padding(.bottom, 4)
+    }
+
+    private var emptyPanel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("No workouts yet").steadyLabel()
+            Text("Log a workout to start tracking sets per muscle, estimated maxes and progression for every lift.")
+                .font(SteadyType.body)
+                .foregroundColor(.atlasTextMuted)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("Log workout") { showingWorkoutLog = true }
+                .buttonStyle(SteadyPrimaryButtonStyle())
+        }
+        .steadyPanel()
+    }
+
+    // MARK: - This Week
+
+    private var weekPanel: some View {
+        let s = weeklySummary
+        return VStack(alignment: .leading, spacing: 14) {
+            Text("This week").steadyLabel()
+            HStack(alignment: .top, spacing: 0) {
+                statColumn("Sessions", "\(s.sessionsCompleted)", "", delta(s.sessionsTrend))
+                divider
+                statColumn("Sets", "\(s.setsCompleted)", "", delta(s.setsTrend))
+                divider
+                statColumn("Volume", volumeNumber(s.totalVolume), unitFormatter.weightUnit, volumeDelta(s.volumeTrend))
+            }
+            SteadyBarChart(bars: weeklyBars)
+            Text("Working sets per week. This week is shown lighter until it's done.")
+                .font(SteadyType.caption)
+                .foregroundColor(.steadyTextFaint)
+        }
+        .steadyPanel()
+    }
+
+    private func delta(_ value: Int) -> String {
+        value == 0 ? "same as last wk" : String(format: "%@%d vs last wk", value > 0 ? "+" : "−", abs(value))
+    }
+
+    private func volumeDelta(_ lbs: Double) -> String {
+        let v = unitFormatter.fromLbs(lbs)
+        if abs(v) < 1 { return "same as last wk" }
+        return (v > 0 ? "+" : "−") + volumeNumber(abs(lbs)) + " vs last wk"
+    }
+
+    /// Volume in the user's unit, shortened past 10k
+    private func volumeNumber(_ lbs: Double) -> String {
+        let v = unitFormatter.fromLbs(lbs)
+        return v >= 10_000 ? String(format: "%.1fk", v / 1000) : Int(v.rounded()).formatted()
+    }
+
+    // MARK: - Muscle Volume
+
+    private var musclePanel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Sets per muscle").steadyLabel()
+                Spacer()
+                let under = volumeRows.filter { $0.status == .under || $0.status == .none }.count
+                if volumeWindow != .thisWeek {
+                    Text(under == 0 ? "all minimums met" : "\(under) under minimum")
+                        .font(SteadyType.caption)
+                        .foregroundColor(under == 0 ? .atlasPrimary : .atlasAmber)
+                }
+            }
+            SteadySegmented(options: VolumeWindow.allCases, selection: $volumeWindow) { $0.title }
+            VStack(spacing: 10) {
+                ForEach(volumeRows) { row in
+                    MuscleVolumeBar(row: row)
+                }
+            }
+            Text(volumeFootnote)
+                .font(SteadyType.caption)
+                .foregroundColor(.steadyTextFaint)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .steadyPanel()
+    }
+
+    private var volumeFootnote: String {
+        let base = "The tick is your weekly minimum: 10 working sets for big muscle groups, 6 for arms and core, scaled to your experience. Sets count toward the exercise's main muscle."
+        if volumeWindow == .thisWeek {
+            let day = Calendar.current.component(.weekday, from: Date())
+            let daysLeft = day == 1 ? 0 : 8 - day
+            return daysLeft > 0 ? base + " \(daysLeft) day\(daysLeft == 1 ? "" : "s") left this week." : base
+        }
+        return base
+    }
+
+    // MARK: - Lifts
+
+    private var liftsPanel: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("Lifts").steadyLabel()
+                Spacer()
+                NavigationLink { AllTimePRsView() } label: {
+                    Text("Records")
+                        .font(SteadyType.caption)
+                        .foregroundColor(.atlasPrimary)
+                }
+                .padding(.trailing, 12)
+                NavigationLink { ProgressiveOverloadView() } label: {
+                    Text("All \(lifts.count)")
+                        .font(SteadyType.caption)
+                        .foregroundColor(.atlasPrimary)
+                }
+            }
+            .padding(.bottom, 4)
+            ForEach(Array(lifts.prefix(5).enumerated()), id: \.element.name) { index, lift in
+                if index > 0 { Rectangle().fill(Color.steadyHairline).frame(height: 1) }
+                NavigationLink {
+                    ExerciseDetailView(exerciseName: lift.name)
+                } label: {
+                    LiftRow(history: lift)
+                }
+                .buttonStyle(.plain)
             }
         }
+        .steadyPanel()
+    }
 
-        // SwiftData cascades deletion to Exercise → WorkoutSet via deleteRule: .cascade
+    // MARK: - Recent Workouts
+
+    private var recentPanel: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Recent workouts").steadyLabel()
+                Spacer()
+                NavigationLink { AllWorkoutsView() } label: {
+                    Text("All \(workoutSessions.count)")
+                        .font(SteadyType.caption)
+                        .foregroundColor(.atlasPrimary)
+                }
+            }
+            ForEach(workoutSessions.prefix(4)) { session in
+                WorkoutCardButton(
+                    session: session,
+                    previous: previousSameWorkout(session),
+                    onOpen: { selectedSession = session },
+                    onDelete: { sessionToDelete = session }
+                )
+            }
+        }
+    }
+
+    private func previousSameWorkout(_ session: WorkoutSession) -> WorkoutSession? {
+        guard let name = session.workoutName else { return nil }
+        return workoutSessions.first { $0.id != session.id && $0.workoutName == name && $0.date < session.date }
+    }
+
+    // MARK: - Pieces
+
+    private var divider: some View {
+        Rectangle().fill(Color.steadyHairline).frame(width: 1).padding(.horizontal, 12)
+    }
+
+    private func statColumn(_ label: String, _ value: String, _ unit: String, _ footnote: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label).steadyLabel(.steadyTextFaint)
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(value)
+                    .font(SteadyType.metric(22))
+                    .foregroundColor(.atlasText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                if !unit.isEmpty {
+                    Text(unit).font(SteadyType.caption).foregroundColor(.atlasTextMuted)
+                }
+            }
+            Text(footnote)
+                .font(SteadyType.caption)
+                .foregroundColor(.atlasTextMuted)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+// MARK: - Muscle Volume Bar
+
+struct MuscleVolumeBar: View {
+    let row: MuscleVolumeRow
+
+    private var color: Color {
+        switch row.status {
+        case .none: return .steadyTextFaint
+        case .under: return .atlasAmber
+        case .met: return .atlasPrimary
+        case .high: return .atlasAccent
+        }
+    }
+
+    private var scale: Double { max(Double(row.ceiling), row.sets, 1) }
+
+    private var setsText: String {
+        row.sets.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int(row.sets))" : String(format: "%.1f", row.sets)
+    }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(row.group.shortName)
+                .font(SteadyType.caption)
+                .foregroundColor(.atlasText)
+                .frame(width: 84, alignment: .leading)
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Rectangle().fill(Color.steadyRaised)
+                    Rectangle().fill(color).frame(width: geo.size.width * min(row.sets / scale, 1))
+                    Rectangle()
+                        .fill(Color.atlasText.opacity(0.7))
+                        .frame(width: 2)
+                        .offset(x: geo.size.width * Double(row.minimum) / scale - 1)
+                }
+            }
+            .frame(height: 8)
+            .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
+            HStack(spacing: 2) {
+                Text(setsText)
+                    .font(SteadyType.metric(13))
+                    .foregroundColor(row.status == .none ? .steadyTextFaint : .atlasText)
+                Text("/\(row.minimum)")
+                    .font(SteadyType.metric(11, weight: .regular))
+                    .foregroundColor(.steadyTextFaint)
+            }
+            .frame(width: 48, alignment: .trailing)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(row.group.rawValue): \(setsText) of \(row.minimum) minimum sets")
+    }
+}
+
+// MARK: - Workout Card Button
+
+/// History card with its snapshot, PR flag and coaching note, used on the tab and in All Workouts.
+struct WorkoutCardButton: View {
+    let session: WorkoutSession
+    let previous: WorkoutSession?
+    let onOpen: () -> Void
+    let onDelete: () -> Void
+
+    @Environment(\.modelContext) private var modelContext
+
+    var body: some View {
+        Button(action: onOpen) {
+            WorkoutHistoryCard(
+                session: session,
+                coachingNote: StrengthCoachingEngine.generateNote(for: session, previousSession: previous, modelContext: modelContext),
+                exerciseSnapshots: WorkoutSnapshotBuilder.buildSnapshots(for: session, modelContext: modelContext),
+                hasPR: WorkoutSnapshotBuilder.sessionHasPR(session: session, modelContext: modelContext),
+                onDelete: onDelete
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Workout Deletion
+
+enum WorkoutDeletion {
+    /// Deletes a session and the PRs it set. Exercises and sets cascade.
+    static func delete(_ session: WorkoutSession, modelContext: ModelContext) {
+        let sessionId = session.id
+        let prs = (try? modelContext.fetch(FetchDescriptor<PersonalRecord>(
+            predicate: #Predicate<PersonalRecord> { $0.workoutSessionId == sessionId }
+        ))) ?? []
+        prs.forEach { modelContext.delete($0) }
         modelContext.delete(session)
-
         do {
             try modelContext.save()
         } catch {
             print("❌ Failed to delete workout: \(error)")
         }
-
-        sessionToDelete = nil
-    }
-    
-    // MARK: - THIS WEEK Summary Cards
-    
-    private var weeklySummarySection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("THIS WEEK")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(.atlasAccent)
-                .tracking(2)
-            
-            HStack(spacing: 12) {
-                // Total Volume
-                StrengthSummaryCard(
-                    value: weeklySummary.formattedVolume,
-                    label: "Total Volume",
-                    unit: unitFormatter.weightUnit,
-                    trend: weeklySummary.formattedVolumeTrend,
-                    trendPositive: weeklySummary.volumeTrend >= 0,
-                    accentColor: .atlasPrimary
-                )
-                
-                // Sets Completed
-                StrengthSummaryCard(
-                    value: "\(weeklySummary.setsCompleted)",
-                    label: "Sets",
-                    unit: nil,
-                    trend: weeklySummary.formattedSetsTrend,
-                    trendPositive: weeklySummary.setsTrend >= 0,
-                    accentColor: .atlasAccent
-                )
-                
-                // Sessions
-                StrengthSummaryCard(
-                    value: "\(weeklySummary.sessionsCompleted)",
-                    label: "Sessions",
-                    unit: nil,
-                    trend: weeklySummary.formattedSessionsTrend,
-                    trendPositive: weeklySummary.sessionsTrend >= 0,
-                    accentColor: .white
-                )
-            }
-        }
-    }
-    
-    // MARK: - Workout History (Rich Cards)
-    
-    private var workoutHistorySection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            ForEach(groupedWorkouts, id: \.0) { month, sessions in
-                monthSection(month: month, sessions: sessions)
-            }
-        }
-    }
-    
-    private func monthSection(month: String, sessions: [WorkoutSession]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text(month.uppercased())
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(.atlasAccent)
-                    .tracking(2)
-                
-                Spacer()
-                
-                Text("\(sessions.count) session\(sessions.count == 1 ? "" : "s")")
-                    .font(.system(size: 12))
-                    .foregroundColor(.atlasTextMuted)
-            }
-            
-            VStack(spacing: 8) {
-                ForEach(sessions) { session in
-                    let snapshots = WorkoutSnapshotBuilder.buildSnapshots(for: session, modelContext: modelContext)
-                    let hasPR = WorkoutSnapshotBuilder.sessionHasPR(session: session, modelContext: modelContext)
-                    let prevSession = findPreviousSameWorkout(session)
-                    let coachingNote = StrengthCoachingEngine.generateNote(
-                        for: session,
-                        previousSession: prevSession,
-                        modelContext: modelContext
-                    )
-                    
-                    Button {
-                        selectedSession = session
-                    } label: {
-                        WorkoutHistoryCard(
-                            session: session,
-                            coachingNote: coachingNote,
-                            exerciseSnapshots: snapshots,
-                            hasPR: hasPR,
-                            onDelete: {
-                                sessionToDelete = session
-                                showDeleteConfirmation = true
-                            }
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
-        }
-    }
-    
-    /// Find the previous session with the same workout name (for volume comparison)
-    private func findPreviousSameWorkout(_ session: WorkoutSession) -> WorkoutSession? {
-        guard let name = session.workoutName else { return nil }
-        return workoutSessions.first(where: {
-            $0.id != session.id &&
-            $0.workoutName == name &&
-            $0.date < session.date
-        })
-    }
-    
-    // MARK: - Navigation Links (Bottom)
-    
-    private var navigationLinksSection: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 12) {
-                NavigationLink(destination: AllTimePRsView()) {
-                    QuickLinkCard(
-                        icon: "trophy.fill",
-                        title: "All-Time PRs",
-                        subtitle: "Your best lifts",
-                        color: .yellow
-                    )
-                }
-                .buttonStyle(PlainButtonStyle())
-                
-                NavigationLink(destination: ProgressiveOverloadView()) {
-                    QuickLinkCard(
-                        icon: "chart.line.uptrend.xyaxis",
-                        title: "Progress",
-                        subtitle: "Volume trends",
-                        color: .atlasPrimary
-                    )
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-        }
-    }
-    
-    // MARK: - Empty State
-    
-    private var emptyStateView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "figure.strengthtraining.traditional")
-                .font(.system(size: 60))
-                .foregroundColor(.atlasTextMuted)
-            
-            Text("No Training History")
-                .font(.system(size: 24, weight: .light))
-                .foregroundColor(.atlasText)
-            
-            Text("Start logging workouts to track volume, PRs, and progression")
-                .font(.system(size: 16))
-                .foregroundColor(.atlasTextMuted)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
-            
-            Button(action: { showingWorkoutLog = true }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "plus.circle.fill")
-                    Text("Log Your First Workout")
-                }
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.atlasBackground)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 14)
-                .background(Color.atlasPrimary)
-                .cornerRadius(12)
-            }
-            .padding(.top, 12)
-        }
     }
 }
 
-// MARK: - Summary Card (Shared Component)
-// Reusable card matching the Cardio tab's summary card design
+// MARK: - All Workouts
 
-struct StrengthSummaryCard: View {
-    let value: String
-    let label: String
-    let unit: String?
-    let trend: String
-    let trendPositive: Bool
-    let accentColor: Color
-    
-    private var isSame: Bool { trend.contains("same") }
-    
-    var body: some View {
-        VStack(spacing: 4) {
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text(value)
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(.atlasText)
-                    .minimumScaleFactor(0.7)
-                    .lineLimit(1)
-                
-                if let unit = unit {
-                    Text(unit)
-                        .font(.system(size: 11))
-                        .foregroundColor(.atlasTextMuted)
-                }
+struct AllWorkoutsView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \WorkoutSession.date, order: .reverse) private var sessions: [WorkoutSession]
+
+    @State private var selectedSession: WorkoutSession? = nil
+    @State private var sessionToDelete: WorkoutSession? = nil
+
+    private var grouped: [(title: String, sessions: [WorkoutSession])] {
+        let calendar = Calendar.current
+        var result: [(title: String, sessions: [WorkoutSession])] = []
+        var currentKey: DateComponents? = nil
+        for session in sessions {
+            let key = calendar.dateComponents([.year, .month], from: session.date)
+            if key != currentKey {
+                result.append((title: session.date.formatted(.dateTime.month(.wide).year()), sessions: []))
+                currentKey = key
             }
-            
-            Text(label)
-                .font(.system(size: 11))
-                .foregroundColor(.atlasTextMuted)
-            
-            // Trend arrow
-            HStack(spacing: 2) {
-                if !isSame {
-                    Image(systemName: trendPositive ? "arrow.up" : "arrow.down")
-                        .font(.system(size: 9, weight: .bold))
-                }
-                Text(trend)
-                    .font(.system(size: 10, weight: .medium))
-            }
-            .foregroundColor(isSame ? .atlasTextMuted.opacity(0.5) : (trendPositive ? .atlasPrimary : .atlasAccent))
+            result[result.count - 1].sessions.append(session)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
-        .background(accentColor.opacity(0.08))
-        .cornerRadius(12)
+        return result
+    }
+
+    var body: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 10) {
+                ForEach(grouped, id: \.title) { group in
+                    HStack {
+                        Text(group.title).steadyLabel()
+                        Spacer()
+                        Text("\(group.sessions.count) session\(group.sessions.count == 1 ? "" : "s")")
+                            .font(SteadyType.caption)
+                            .foregroundColor(.atlasTextMuted)
+                    }
+                    .padding(.top, 8)
+                    ForEach(group.sessions) { session in
+                        WorkoutCardButton(
+                            session: session,
+                            previous: sessions.first { $0.id != session.id && $0.workoutName == session.workoutName && $0.date < session.date },
+                            onOpen: { selectedSession = session },
+                            onDelete: { sessionToDelete = session }
+                        )
+                    }
+                }
+            }
+            .padding(16)
+        }
+        .background(Color.atlasBackground.ignoresSafeArea())
+        .navigationTitle("Workouts")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
+        .navigationDestination(item: $selectedSession) { session in
+            WorkoutDetailView(session: session)
+        }
+        .confirmationDialog(
+            "Delete Workout?",
+            isPresented: Binding(get: { sessionToDelete != nil }, set: { if !$0 { sessionToDelete = nil } }),
+            titleVisibility: .visible,
+            presenting: sessionToDelete
+        ) { session in
+            Button("Delete", role: .destructive) { WorkoutDeletion.delete(session, modelContext: modelContext) }
+            Button("Cancel", role: .cancel) { }
+        } message: { session in
+            Text("\(session.workoutName ?? "Workout") on \(session.date.formatted(date: .abbreviated, time: .omitted)) will be permanently deleted.")
+        }
     }
 }
 
@@ -362,7 +471,7 @@ struct WorkoutDetailView: View {
                     // Header
                     VStack(alignment: .leading, spacing: 8) {
                         Text(session.workoutName ?? "Workout")
-                            .font(.system(size: 28, weight: .light))
+                            .font(SteadyType.display(28))
                             .foregroundColor(.atlasText)
                         
                         HStack(spacing: 8) {
@@ -390,7 +499,7 @@ struct WorkoutDetailView: View {
                         }
                     }
                     
-                    Divider().background(Color.white.opacity(0.2))
+                    Rectangle().fill(Color.steadyHairline).frame(height: 1)
                     
                     // Exercises
                     if session.exercises.isEmpty {
@@ -420,18 +529,17 @@ struct WorkoutDetailView: View {
                             Text(notes)
                                 .font(.system(size: 15))
                                 .foregroundColor(.atlasText)
-                                .padding(12)
-                                .background(Color.white.opacity(0.05))
-                                .cornerRadius(8)
+                                .steadyPanel(padding: 12)
                         }
                     }
                     
                     Spacer()
                 }
-                .padding(24)
+                .padding(16)
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
     }
 }
 
@@ -501,13 +609,7 @@ struct ExerciseDetailCard: View {
                     .padding(.top, 4)
             }
         }
-        .padding(16)
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.atlasPrimary.opacity(0.2), lineWidth: 1)
-        )
+        .steadyPanel()
     }
 }
 
@@ -578,31 +680,28 @@ struct AllTimePRsView: View {
                                     Spacer()
                                     
                                     Text(unitFormatter.displayWeightInt(pr.e1rm))
-                                        .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(.atlasPrimary)
+                                        .font(SteadyType.metric(17))
+                                        .foregroundColor(.atlasText)
                                     
                                     Image(systemName: "chevron.right")
                                         .font(.system(size: 12))
                                         .foregroundColor(.atlasTextMuted.opacity(0.5))
                                 }
-                                .padding(16)
-                                .background(Color.white.opacity(0.05))
-                                .cornerRadius(12)
+                                .steadyPanel()
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
                     }
-                    .padding(24)
+                    .padding(16)
                 }
             }
         }
-        .navigationTitle("All-Time PRs")
+        .navigationTitle("Records")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
     }
 }
 
 #Preview {
-    NavigationStack {
-        WorkoutHistoryView()
-    }
+    WorkoutHistoryView()
 }

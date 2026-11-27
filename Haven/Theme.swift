@@ -199,3 +199,32 @@ struct SteadyOptionRow: View {
         .buttonStyle(.plain)
     }
 }
+
+// MARK: - Segmented Control
+
+struct SteadySegmented<Option: Hashable>: View {
+    let options: [Option]
+    @Binding var selection: Option
+    let title: (Option) -> String
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(options, id: \.self) { option in
+                Button { selection = option } label: {
+                    Text(title(option))
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(selection == option ? .atlasText : .atlasTextMuted)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 7)
+                        .background(selection == option ? Color.steadyRaised : Color.clear)
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(2)
+        .background(Color.atlasBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.steadyHairline, lineWidth: 1))
+    }
+}

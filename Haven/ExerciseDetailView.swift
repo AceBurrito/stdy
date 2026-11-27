@@ -1,303 +1,257 @@
+// ExerciseDetailView.swift
+// Steady — one lift's progressive overload: where it is now, the trend
+// (e1RM, top set, volume or reps), records, and every session.
+
 import SwiftUI
 import SwiftData
-import Charts
-
-// MARK: - Exercise Detail View
-// Unified view showing e1RM hero card with sparkline, personal records,
-// and full session history for a single exercise.
 
 struct ExerciseDetailView: View {
     let exerciseName: String
-    
-    @Environment(\.modelContext) private var modelContext
+
     @Environment(\.unitFormatter) private var unitFormatter
-    @State private var exerciseHistory: [Exercise] = []
-    @State private var e1rmTrend: [EstimatedMaxDataPoint] = []
-    @State private var prs: ExercisePRs = ExercisePRs(
-        maxWeight: nil, maxWeightDate: nil,
-        maxVolume: nil, maxVolumeDate: nil,
-        maxReps: nil, maxRepsDate: nil,
-        maxBestSet: nil, maxBestSetDate: nil
-    )
-    
+    @Query(sort: \WorkoutSession.date, order: .reverse) private var sessions: [WorkoutSession]
+    @Query private var customExercises: [CustomExercise]
+
+    @State private var metric: LiftMetric? = nil
+    @State private var range: SteadyChartRange = .all
+
+    private var history: LiftHistory? {
+        LiftAnalytics.history(named: exerciseName, sessions: sessions, resolver: MuscleGroupResolver(customExercises: customExercises))
+    }
+
+    private func metrics(for history: LiftHistory) -> [LiftMetric] {
+        history.isBodyweight ? [.reps] : [.e1rm, .topSet, .volume]
+    }
+
     var body: some View {
-        ZStack {
-            Color.atlasBackground.ignoresSafeArea()
-            
-            ScrollView {
-                VStack(spacing: 24) {
-                    e1rmHeroCard
-                    personalRecordsSection
-                    sessionHistorySection
-                    Spacer().frame(height: 40)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                if let history, !history.points.isEmpty {
+                    heroPanel(history)
+                    chartPanel(history)
+                    recordsPanel(history)
+                    sessionsPanel(history)
+                } else {
+                    Text("No sessions logged for this exercise yet.")
+                        .font(SteadyType.body)
+                        .foregroundColor(.atlasTextMuted)
+                        .steadyPanel()
                 }
-                .padding(24)
+                Spacer(minLength: 24)
             }
+            .padding(16)
         }
+        .background(Color.atlasBackground.ignoresSafeArea())
         .navigationTitle(exerciseName)
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear { loadData() }
+        .toolbar(.visible, for: .navigationBar)
     }
-    
-    // MARK: - e1RM Hero Card
-    
-    private var e1rmHeroCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("ESTIMATED 1RM")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(.atlasAccent)
-                .tracking(2)
-            
-            if let latest = e1rmTrend.last {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(Int(latest.estimatedMax))")
-                        .font(.system(size: 40, weight: .semibold))
-                        .foregroundColor(.atlasText)
-                    
-                    Text(unitFormatter.weightUnit)
-                        .font(.system(size: 18))
+
+    // MARK: - Hero
+
+    private func heroPanel(_ history: LiftHistory) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(history.isBodyweight ? "Best reps, last session" : "Estimated 1RM, last session").steadyLabel()
+                Spacer()
+                TrendChip(trend: history.trend)
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(primaryText(history.latest, history: history))
+                    .font(SteadyType.display(48))
+                    .foregroundColor(.atlasText)
+                Text(history.isBodyweight ? "reps" : unitFormatter.weightUnit)
+                    .font(SteadyType.title)
+                    .foregroundColor(.atlasTextMuted)
+            }
+            HStack(spacing: 16) {
+                if let best = history.best {
+                    labeled("Best", primaryText(best, history: history))
+                }
+                if let change = history.change() {
+                    labeled("8 weeks", String(format: "%@%.1f%%", change >= 0 ? "+" : "−", abs(change) * 100))
+                }
+                labeled("Sessions", "\(history.points.count)")
+            }
+            if !history.isBodyweight {
+                Text("e1RM uses the Epley formula on your best set, capped at 12 reps.")
+                    .font(SteadyType.caption)
+                    .foregroundColor(.steadyTextFaint)
+            }
+        }
+        .steadyPanel()
+    }
+
+    private func labeled(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).steadyLabel(.steadyTextFaint)
+            Text(value)
+                .font(SteadyType.metric(15))
+                .foregroundColor(.atlasText)
+        }
+    }
+
+    private func primaryText(_ value: Double?, history: LiftHistory) -> String {
+        guard let value else { return "—" }
+        return history.isBodyweight ? "\(Int(value))" : String(format: "%.0f", unitFormatter.fromLbs(value))
+    }
+
+    // MARK: - Chart
+
+    private func chartPanel(_ history: LiftHistory) -> some View {
+        let options = metrics(for: history)
+        let selected = metric.flatMap { options.contains($0) ? $0 : nil } ?? options[0]
+        let points = range.filter(history.points.compactMap { p -> SteadyChartPoint? in
+            guard let v = p.value(for: selected) else { return nil }
+            let shown = selected == .reps ? v : unitFormatter.fromLbs(v)
+            return SteadyChartPoint(date: p.date, value: shown, isHighlighted: p.isPR && selected == history.primaryMetric)
+        })
+
+        return VStack(alignment: .leading, spacing: 14) {
+            if options.count > 1 {
+                SteadySegmented(options: options, selection: Binding(get: { selected }, set: { metric = $0 })) { $0.title }
+            }
+            SteadyLineChart(
+                points: points,
+                tint: .atlasPrimary,
+                axisFormat: { v in v >= 10_000 ? String(format: "%.0fk", v / 1000) : String(format: "%.0f", v) },
+                emptyText: "No sessions in this range."
+            )
+            HStack {
+                SteadySegmented(options: SteadyChartRange.allCases, selection: $range) { $0.title }
+            }
+            if history.points.contains(where: \.isPR) {
+                HStack(spacing: 6) {
+                    Image(systemName: "diamond.fill")
+                        .font(.system(size: 8))
+                        .foregroundColor(.atlasAmber)
+                    Text("New best")
+                        .font(SteadyType.caption)
                         .foregroundColor(.atlasTextMuted)
                 }
-                
-                // Trend vs previous session
-                if e1rmTrend.count >= 2 {
-                    let prev = e1rmTrend[e1rmTrend.count - 2].estimatedMax
-                    let diff = latest.estimatedMax - prev
-                    let sign = diff >= 0 ? "+" : ""
-                    
-                    HStack(spacing: 4) {
-                        Image(systemName: diff >= 0 ? "arrow.up.right" : "arrow.down.right")
-                            .font(.system(size: 12))
-                        Text("\(sign)\(unitFormatter.displayWeightInt(abs(diff))) from last session")
-                            .font(.system(size: 13))
-                    }
-                    .foregroundColor(diff >= 0 ? .atlasPrimary : .atlasAccent)
-                }
-                
-                // Sparkline chart
-                if e1rmTrend.count >= 2 {
-                    e1rmSparkline
-                        .frame(height: 80)
-                        .padding(.top, 8)
-                }
-            } else {
-                Text("No weighted sets logged yet")
-                    .font(.system(size: 15))
-                    .foregroundColor(.atlasTextMuted)
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(12)
+        .steadyPanel()
     }
-    
-    // MARK: - e1RM Sparkline
-    
-    @ViewBuilder
-    private var e1rmSparkline: some View {
-        let minVal = (e1rmTrend.map(\.estimatedMax).min() ?? 0) * 0.95
-        let maxVal = (e1rmTrend.map(\.estimatedMax).max() ?? 100) * 1.05
-        
-        Chart(e1rmTrend) { point in
-            LineMark(
-                x: .value("Date", point.date),
-                y: .value("e1RM", point.estimatedMax)
-            )
-            .foregroundStyle(Color.atlasPrimary)
-            .lineStyle(StrokeStyle(lineWidth: 2))
-            
-            AreaMark(
-                x: .value("Date", point.date),
-                yStart: .value("Min", minVal),
-                yEnd: .value("e1RM", point.estimatedMax)
-            )
-            .foregroundStyle(
-                LinearGradient(
-                    colors: [Color.atlasPrimary.opacity(0.2), Color.atlasPrimary.opacity(0.02)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-            
-            PointMark(
-                x: .value("Date", point.date),
-                y: .value("e1RM", point.estimatedMax)
-            )
-            .foregroundStyle(Color.atlasPrimary)
-            .symbolSize(point.id == e1rmTrend.last?.id ? 30 : 15)
-        }
-        .chartYScale(domain: minVal...maxVal)
-        .chartXAxis(.hidden)
-        .chartYAxis(.hidden)
-    }
-    
-    // MARK: - Personal Records Section
-    
-    private var personalRecordsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("PERSONAL RECORDS")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(.atlasAccent)
-                .tracking(2)
-            
-            VStack(spacing: 8) {
-                if let bestE1RM = e1rmTrend.map(\.estimatedMax).max() {
-                    let bestDate = e1rmTrend.first(where: { $0.estimatedMax == bestE1RM })?.date
-                    prRow(label: "Best e1RM", value: unitFormatter.displayWeightInt(Double(Int(bestE1RM))), date: bestDate)
-                }
-                
-                if let maxW = prs.maxWeight {
-                    prRow(label: "Heaviest", value: unitFormatter.displayWeightInt(maxW), date: prs.maxWeightDate)
-                }
-                
-                if let maxR = prs.maxReps {
-                    prRow(label: "Most Reps", value: "\(maxR) reps", date: prs.maxRepsDate)
-                }
+
+    // MARK: - Records
+
+    private func recordsPanel(_ history: LiftHistory) -> some View {
+        let bestE1RM = history.points.filter { $0.e1rm != nil }.max { ($0.e1rm ?? 0) < ($1.e1rm ?? 0) }
+        let heaviest = history.points.filter { $0.topWeight != nil }.max { ($0.topWeight ?? 0) < ($1.topWeight ?? 0) }
+        let mostVolume = history.points.filter { $0.volume > 0 }.max { $0.volume < $1.volume }
+        let mostReps = history.points.max { $0.bestReps < $1.bestReps }
+
+        return VStack(alignment: .leading, spacing: 0) {
+            Text("Records").steadyLabel().padding(.bottom, 8)
+            if let p = bestE1RM, let v = p.e1rm {
+                recordRow("Best e1RM", unitFormatter.displayWeightInt(v), p.date)
             }
-            
-            if e1rmTrend.isEmpty && prs.maxWeight == nil {
-                Text("Log more sessions to build your PR history")
-                    .font(.system(size: 13))
-                    .foregroundColor(.atlasTextMuted)
-                    .padding(.vertical, 8)
+            if let p = heaviest, let w = p.topWeight {
+                recordRow("Heaviest set", "\(unitFormatter.displayWeightInt(w)) × \(p.topReps)", p.date)
+            }
+            if let p = mostVolume {
+                recordRow("Most volume", unitFormatter.displayVolume(p.volume), p.date)
+            }
+            if let p = mostReps, p.bestReps > 0 {
+                recordRow("Most reps", "\(p.bestReps)", p.date)
             }
         }
+        .steadyPanel()
     }
-    
-    private func prRow(label: String, value: String, date: Date?) -> some View {
+
+    private func recordRow(_ label: String, _ value: String, _ date: Date) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 14))
+                .font(SteadyType.body)
                 .foregroundColor(.atlasTextMuted)
-            
             Spacer()
-            
             Text(value)
-                .font(.system(size: 15, weight: .semibold))
+                .font(SteadyType.metric(15))
                 .foregroundColor(.atlasText)
-            
-            if let date = date {
-                Text(date.formatted(.dateTime.month(.abbreviated).day()))
-                    .font(.system(size: 12))
-                    .foregroundColor(.atlasTextMuted.opacity(0.7))
-                    .frame(width: 50, alignment: .trailing)
-            }
+            Text(date.formatted(.dateTime.month(.abbreviated).day()))
+                .font(SteadyType.caption)
+                .foregroundColor(.steadyTextFaint)
+                .frame(width: 54, alignment: .trailing)
         }
-        .padding(12)
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(8)
+        .padding(.vertical, 8)
     }
-    
-    // MARK: - Session History
-    
-    private var sessionHistorySection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("HISTORY")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(.atlasAccent)
-                .tracking(2)
-            
-            if exerciseHistory.isEmpty {
-                Text("No sessions found for this exercise")
-                    .font(.system(size: 14))
-                    .foregroundColor(.atlasTextMuted)
-                    .padding(16)
-            } else {
-                VStack(spacing: 1) {
-                    ForEach(exerciseHistory, id: \.id) { exercise in
-                        sessionHistoryRow(exercise: exercise)
+
+    // MARK: - Sessions
+
+    private func sessionsPanel(_ history: LiftHistory) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Sessions").steadyLabel().padding(.bottom, 8)
+            ForEach(Array(history.points.reversed().enumerated()), id: \.element.id) { index, point in
+                if index > 0 { Rectangle().fill(Color.steadyHairline).frame(height: 1) }
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(point.date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+                            .font(SteadyType.bodyEmphasis)
+                            .foregroundColor(.atlasText)
+                        if point.isPR {
+                            Text("BEST")
+                                .font(.system(size: 9, weight: .bold))
+                                .tracking(1)
+                                .foregroundColor(.atlasBackground)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(Color.atlasAmber)
+                                .clipShape(RoundedRectangle(cornerRadius: 3))
+                        }
+                        Spacer()
+                        if let e1rm = point.e1rm {
+                            Text("e1RM \(Int(unitFormatter.fromLbs(e1rm).rounded()))")
+                                .font(SteadyType.metric(12, weight: .medium))
+                                .foregroundColor(.atlasTextMuted)
+                        }
                     }
-                }
-                .cornerRadius(12)
-            }
-        }
-    }
-    
-    private func sessionHistoryRow(exercise: Exercise) -> some View {
-        let sessionDate = exercise.workoutSession?.date ?? Date()
-        let sortedSets = exercise.sets.sorted { $0.setNumber < $1.setNumber }
-        let currentE1RM = EstimatedMaxCalculator.bestE1RM(from: exercise)
-        
-        // Check if this session was a PR (e1RM higher than all other sessions)
-        let isSessionPR: Bool = {
-            guard let curr = currentE1RM else { return false }
-            let otherBests = exerciseHistory
-                .filter { $0.id != exercise.id }
-                .compactMap { EstimatedMaxCalculator.bestE1RM(from: $0) }
-            return otherBests.allSatisfy { curr > $0 } && !otherBests.isEmpty
-        }()
-        
-        return VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(sessionDate.formatted(.dateTime.month(.abbreviated).day()))
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.atlasText)
-                
-                Spacer()
-                
-                if isSessionPR {
-                    HStack(spacing: 3) {
-                        Image(systemName: "bolt.fill")
-                            .font(.system(size: 10))
-                        Text("PR")
-                            .font(.system(size: 10, weight: .bold))
-                    }
-                    .foregroundColor(.atlasBackground)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(Color.atlasPrimary)
-                    .cornerRadius(4)
-                }
-                
-                if let e1rm = currentE1RM {
-                    Text("e1RM: \(Int(e1rm))")
-                        .font(.system(size: 12, weight: .medium))
+                    Text(setsText(point.sets))
+                        .font(SteadyType.metric(13, weight: .regular))
                         .foregroundColor(.atlasTextMuted)
                 }
+                .padding(.vertical, 10)
             }
-            
-            // Sets display
-            Text(sortedSets.map { set in
-                if set.isBodyweight {
-                    return "BW×\(set.reps)"
-                } else if let w = set.weight {
-                    return "\(Int(w))×\(set.reps)"
-                } else {
-                    return "\(set.reps) reps"
-                }
-            }.joined(separator: ", "))
-            .font(.system(size: 13))
-            .foregroundColor(.atlasTextMuted)
         }
-        .padding(14)
-        .background(Color.white.opacity(0.05))
+        .steadyPanel()
     }
-    
-    // MARK: - Load Data
-    
-    private func loadData() {
-        exerciseHistory = WorkoutHistoryService.getExerciseHistory(
-            for: exerciseName,
-            modelContext: modelContext,
-            limit: 30
-        )
-        
-        e1rmTrend = EstimatedMaxCalculator.e1RMTrend(
-            exerciseName: exerciseName,
-            modelContext: modelContext,
-            limit: 20
-        )
-        
-        prs = WorkoutHistoryService.findPRs(
-            for: exerciseName,
-            modelContext: modelContext
-        )
+
+    private func setsText(_ sets: [WorkoutSet]) -> String {
+        sets.map { set in
+            if set.isBodyweight || (set.weight ?? 0) == 0 { return "BW×\(set.reps)" }
+            return "\(Int(unitFormatter.fromLbs(set.weight ?? 0).rounded()))×\(set.reps)"
+        }
+        .joined(separator: "  ")
+    }
+}
+
+// MARK: - Trend Chip
+
+struct TrendChip: View {
+    let trend: LiftTrend
+
+    private var color: Color {
+        switch trend {
+        case .progressing: return .atlasPrimary
+        case .holding: return .atlasTextMuted
+        case .dropping: return .atlasAmber
+        case .building: return .steadyTextFaint
+        }
+    }
+
+    var body: some View {
+        Text(trend.title.uppercased())
+            .font(.system(size: 10, weight: .semibold))
+            .tracking(1)
+            .foregroundColor(color)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .overlay(RoundedRectangle(cornerRadius: 4).stroke(color.opacity(0.5), lineWidth: 1))
     }
 }
 
 #Preview {
     NavigationStack {
-        ExerciseDetailView(exerciseName: "Bench Press")
+        ExerciseDetailView(exerciseName: "Bench Press (Barbell)")
     }
 }
