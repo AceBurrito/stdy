@@ -14,6 +14,52 @@ extension Color {
     static let widgetGreen = Color(red: 0.486, green: 0.769, blue: 0.541)  // #7CC48A
     static let widgetBackground = Color(red: 0.059, green: 0.063, blue: 0.067) // #0F1011
     static let widgetMuted = Color(red: 0.557, green: 0.565, blue: 0.576)  // #8E9093
+    static let widgetHairline = Color.white.opacity(0.10)
+}
+
+/// Small uppercase tracked label.
+struct WidgetLabel: View {
+    let text: String
+
+    var body: some View {
+        Text(text.uppercased())
+            .font(.system(size: 10, weight: .semibold))
+            .tracking(1.2)
+            .foregroundColor(.widgetMuted)
+    }
+}
+
+/// Recovery state, the call for the day, and (optionally) the signals behind it.
+struct WidgetRecoveryBlock: View {
+    let entry: AtlasWidgetEntry
+    var titleSize: CGFloat = 22
+    var showsSignals: Bool = true
+
+    private var recovery: WidgetRecovery { WidgetRecovery(raw: entry.recoveryState) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            WidgetRecoveryHeader(recovery: recovery, titleSize: titleSize)
+            Text(entry.recoveryHint.isEmpty ? "Open STDY to update" : entry.recoveryHint)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.white.opacity(0.85))
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.leading, 11)
+            if showsSignals && !entry.signals.isEmpty {
+                Spacer(minLength: 4)
+                VStack(alignment: .leading, spacing: 1) {
+                    ForEach(entry.signals, id: \.self) { signal in
+                        Text(signal)
+                            .font(.system(size: 11).monospacedDigit())
+                            .foregroundColor(.widgetMuted)
+                            .lineLimit(1)
+                    }
+                }
+                .padding(.leading, 11)
+            }
+        }
+    }
 }
 
 /// Mirrors the app's RecoveryState (raw values must match).

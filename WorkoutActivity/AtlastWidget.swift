@@ -2,7 +2,8 @@
 // WorkoutActivity (Widget Extension target ONLY)
 //
 // Home screen widget definition. Supports systemSmall and systemMedium.
-// Small: recovery state + today's training. Medium: adds a body comp snapshot.
+// Small: today's recovery call + workout. Medium: adds why (HRV/RHR/sleep)
+// and a preview of the workout's first exercises.
 // The kind stays "AtlasWidget" so widgets users already placed keep working.
 
 import WidgetKit
@@ -15,8 +16,8 @@ struct AtlasWidget: Widget {
         StaticConfiguration(kind: kind, provider: AtlasWidgetProvider()) { entry in
             AtlasWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("Recovery & Training")
-        .description("Today's recovery state, training, and body composition.")
+        .configurationDisplayName("Today")
+        .description("How recovered you are, what that means for today, and the workout you have planned.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
@@ -42,16 +43,8 @@ struct AtlasWidgetEntryView: View {
 } timeline: {
     AtlasWidgetEntry.sample
     AtlasWidgetEntry(
-        date: Date(), recoveryState: "manage",
-        workoutName: "Lower A", workoutExerciseCount: 5, workoutType: "strength",
-        isRestDay: false, workoutCompleted: true,
-        weightText: "182.4 lbs", bodyFatText: "", weightTrendText: ""
-    )
-    AtlasWidgetEntry(
-        date: Date(), recoveryState: "",
-        workoutName: "Rest Day", workoutExerciseCount: 0, workoutType: "rest",
-        isRestDay: true, workoutCompleted: false,
-        weightText: "", bodyFatText: "", weightTrendText: ""
+        date: Date(), recoveryState: "", workoutName: "Rest Day", workoutExerciseCount: 0,
+        workoutType: "rest", isRestDay: true, workoutCompleted: false
     )
 }
 
@@ -60,9 +53,15 @@ struct AtlasWidgetEntryView: View {
 } timeline: {
     AtlasWidgetEntry.sample
     AtlasWidgetEntry(
-        date: Date(), recoveryState: "ready",
+        date: Date(), recoveryState: "ready", recoveryHint: "Go heavy today",
+        signals: ["HRV +12%", "RHR −3", "Sleep 7.8h"],
         workoutName: "Zone 2", workoutExerciseCount: 0, workoutType: "cardio",
-        isRestDay: false, workoutCompleted: false,
-        weightText: "82.7 kg", bodyFatText: "16.9%", weightTrendText: "−0.4 kg / 7d"
+        isRestDay: false, workoutCompleted: false, workoutDetail: "30 min · 130–145 bpm"
+    )
+    AtlasWidgetEntry(
+        date: Date(), recoveryState: "good", recoveryHint: "Train as planned",
+        signals: ["HRV at avg", "RHR at avg", "Sleep 7.1h"],
+        workoutName: "A: Push", workoutExerciseCount: 5, workoutType: "strength",
+        isRestDay: false, workoutCompleted: true
     )
 }
